@@ -1,0 +1,28 @@
+{
+  "name": "nexus-prediction-market",
+  "path": "/home/ubuntu/nexus-prediction-market",
+  "type": "web",
+  "features": ["db", "server", "user"],
+  "version": "7b1cc86f",
+  "template": "web-db-user",
+  "created_at": "2026-02-15T07:47:49.212Z",
+  "updated_at": "2026-02-26T20:08:00.000Z",
+  "github": {
+    "repository": "https://github.com/ptechao/nexus-prediction-market.git",
+    "branch": "master",
+    "remote": "origin"
+  },
+  "database": {
+    "type": "mysql",
+    "migrations_dir": "drizzle"
+  },
+  "server": {
+    "port": 3000,
+    "framework": "express",
+    "trpc": true
+  },
+  "client": {
+    "framework": "react",
+    "vite": true
+  }
+}
