@@ -56,7 +56,7 @@ const MOCK_MARKET_DETAILS: Record<string, any> = {
     participants: 24300,
     isTrending: true,
     slug: 'trump-vs-biden-2028',
-    polymarketUrl: '',
+
     tags: ['Politics', 'Elections', 'US Election'],
     subMarkets: [],
     resolutionSource: 'Official US Congress certification of Electoral College results',
@@ -83,7 +83,7 @@ const MOCK_MARKET_DETAILS: Record<string, any> = {
     participants: 3842,
     isTrending: true,
     slug: 'lakers-vs-warriors-2026',
-    polymarketUrl: '',
+
     tags: ['NBA', 'Basketball', 'Sports'],
     subMarkets: [],
     resolutionSource: 'Official NBA Finals results',
@@ -110,7 +110,7 @@ const MOCK_MARKET_DETAILS: Record<string, any> = {
     participants: 12560,
     isTrending: true,
     slug: 'btc-200k-2026',
-    polymarketUrl: '',
+
     tags: ['Crypto', 'Bitcoin', 'Price Prediction'],
     subMarkets: [],
     resolutionSource: 'CoinGecko aggregate price data',
@@ -137,7 +137,7 @@ const MOCK_MARKET_DETAILS: Record<string, any> = {
     participants: 3842,
     isTrending: true,
     slug: 'lakers-vs-warriors-2026',
-    polymarketUrl: '',
+
     tags: ['NBA', 'Basketball', 'Sports'],
     subMarkets: [],
     resolutionSource: 'Official NBA Finals results',
@@ -164,7 +164,7 @@ const MOCK_MARKET_DETAILS: Record<string, any> = {
     participants: 12560,
     isTrending: true,
     slug: 'btc-150k-2026',
-    polymarketUrl: '',
+
     tags: ['Crypto', 'Bitcoin'],
     subMarkets: [],
     resolutionSource: 'CoinGecko aggregate price data',
@@ -191,7 +191,7 @@ const MOCK_MARKET_DETAILS: Record<string, any> = {
     participants: 5210,
     isTrending: false,
     slug: 'us-approval-march-2026',
-    polymarketUrl: '',
+
     tags: ['Politics', 'US Politics'],
     subMarkets: [],
     resolutionSource: 'RealClearPolitics polling average',
@@ -218,7 +218,7 @@ const MOCK_MARKET_DETAILS: Record<string, any> = {
     participants: 7830,
     isTrending: true,
     slug: 'eth-etf-inflows-q1-2026',
-    polymarketUrl: '',
+
     tags: ['Crypto', 'Ethereum', 'ETF'],
     subMarkets: [],
     resolutionSource: 'Bloomberg ETF flow data',
@@ -245,7 +245,7 @@ const MOCK_MARKET_DETAILS: Record<string, any> = {
     participants: 4150,
     isTrending: false,
     slug: 'sp500-6500-june-2026',
-    polymarketUrl: '',
+
     tags: ['Finance', 'Stock Market'],
     subMarkets: [],
     resolutionSource: 'S&P Dow Jones Indices official close',
@@ -272,7 +272,7 @@ const MOCK_MARKET_DETAILS: Record<string, any> = {
     participants: 1920,
     isTrending: false,
     slug: 'japan-snap-election-2026',
-    polymarketUrl: '',
+
     tags: ['Politics', 'Japan', 'Elections'],
     subMarkets: [],
     resolutionSource: 'Official announcement by the Prime Minister of Japan',
@@ -895,18 +895,7 @@ export default function MarketDetail() {
                 </div>
               </div>
 
-              {/* External Link */}
-              {market.polymarketUrl && (
-                <a
-                  href={market.polymarketUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-slate-800/40 border border-slate-700/50 text-sm text-slate-400 hover:text-cyan-400 hover:border-cyan-500/30 transition-all duration-200"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  View on Polymarket
-                </a>
-              )}
+
             </div>
           </div>
         </div>

@@ -15,7 +15,7 @@ export interface MarketData {
   title: string;
   description?: string;
   sourceId: string;
-  sourceType: 'api-football' | 'polymarket' | 'custom';
+  sourceType: 'api-football' | 'api-sports' | 'custom';
   fixtureStatus: string;
   endDate: Date;
   oracleAddress: string;

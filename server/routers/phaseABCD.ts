@@ -22,7 +22,7 @@ const phaseARouter = router({
         title: z.string(),
         description: z.string().optional(),
         sourceId: z.string(),
-        sourceType: z.enum(['api-football', 'polymarket', 'custom']),
+        sourceType: z.enum(['api-football', 'api-sports', 'custom']),
         fixtureStatus: z.string(),
         endDate: z.date(),
         oracleAddress: z.string(),
