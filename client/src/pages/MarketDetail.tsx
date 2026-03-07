@@ -520,18 +520,34 @@ export default function MarketDetail() {
   const isMock = isMockId(marketId);
   const mockData = isMock ? MOCK_MARKET_DETAILS[marketId] : null;
 
-  const { data: apiMarket, isLoading, isError } = trpc.markets.byId.useQuery(
+  const { data: apiMarket, isLoading: isApiLoading, isError } = trpc.markets.byId.useQuery(
     { id: marketId },
     {
-      enabled: !!marketId && !isMock,
+      enabled: !!marketId && !isMock && !marketId.startsWith('wc-'),
       staleTime: 60_000,
       retry: 2,
       refetchOnWindowFocus: false,
     }
   );
 
+  const { data: wcMarket, isLoading: isWCLoading } = trpc.markets.worldCupById.useQuery(
+    { id: marketId },
+    {
+      enabled: !!marketId && marketId.startsWith('wc-'),
+      staleTime: 300_000,
+    }
+  );
+
+  const { data: aiPrediction, isLoading: isAILoading } = trpc.markets.worldCupPrediction.useQuery(
+    { id: marketId },
+    {
+      enabled: !!marketId && marketId.startsWith('wc-'),
+      staleTime: 86400_000,
+    }
+  );
+
   // Use API data for real IDs, mock data for mock/fallback IDs
-  const market = isMock ? mockData : apiMarket;
+  const market = isMock ? mockData : (marketId.startsWith('wc-') ? wcMarket : apiMarket);
 
   // Generate mock price history based on current odds
   const priceHistory = useMemo(() => {
@@ -540,7 +556,8 @@ export default function MarketDetail() {
     return generatePriceHistory(market.yesOdds, days);
   }, [market?.yesOdds, chartRange]);
 
-  if (!isMock && isLoading) return <DetailSkeleton />;
+  const isLoading = isMock ? false : (marketId.startsWith('wc-') ? isWCLoading : isApiLoading);
+  if (isLoading) return <DetailSkeleton />;
   if (!market) return <MarketNotFound />;
 
   const timeRemaining = () => {
@@ -826,6 +843,88 @@ export default function MarketDetail() {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* AI Prediction Section */}
+            {marketId?.startsWith('wc-') && (
+              <div className="rounded-xl bg-slate-800/60 border border-cyan-500/30 p-6 overflow-hidden relative">
+                <div className="absolute top-0 right-0 p-3">
+                  <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">AI Analysis</Badge>
+                </div>
+                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                  <Activity className="w-6 h-6 text-cyan-400" />
+                  Nexus AI Prediction
+                </h2>
+                
+                {isAILoading ? (
+                  <div className="flex flex-col items-center py-8 space-y-4">
+                    <div className="w-10 h-10 border-4 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin"></div>
+                    <p className="text-slate-400 text-sm">Analyzing match data and historical performance...</p>
+                  </div>
+                ) : aiPrediction ? (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-end">
+                          <span className="text-sm text-slate-400">Confidence Level</span>
+                          <span className="text-2xl font-bold text-cyan-400">{aiPrediction.confidence}%</span>
+                        </div>
+                        <div className="w-full bg-slate-700/50 rounded-full h-2.5">
+                          <div 
+                            className="bg-cyan-500 h-2.5 rounded-full shadow-[0_0_10px_rgba(6,182,212,0.5)]" 
+                            style={{ width: `${aiPrediction.confidence}%` }}
+                          ></div>
+                        </div>
+                        <p className="text-slate-300 text-sm leading-relaxed italic">
+                          "{aiPrediction.reasoning}"
+                        </p>
+                      </div>
+                      
+                      <div className="bg-slate-900/40 rounded-lg p-4 border border-slate-700/30">
+                        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Key Factors</h3>
+                        <ul className="space-y-2">
+                          {aiPrediction.keyFactors.map((factor: string, idx: number) => (
+                            <li key={idx} className="flex items-start gap-2 text-sm text-slate-300">
+                              <ChevronRight className="w-4 h-4 text-cyan-500 mt-0.5 flex-shrink-0" />
+                              {factor}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                    
+                    <div className="pt-4 border-t border-slate-700/30">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-slate-500 uppercase">AI Win Probability</span>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="flex-1 text-center">
+                          <div className="text-lg font-bold text-white">{aiPrediction.predictedHomeWinOdds}%</div>
+                          <div className="text-[10px] text-slate-500 uppercase">{aiPrediction.homeTeam}</div>
+                        </div>
+                        <div className="flex-[3] h-4 bg-slate-700/30 rounded-full overflow-hidden flex">
+                          <div 
+                            className="bg-emerald-500 h-full" 
+                            style={{ width: `${aiPrediction.predictedHomeWinOdds}%` }}
+                          ></div>
+                          <div 
+                            className="bg-red-500 h-full" 
+                            style={{ width: `${aiPrediction.predictedAwayWinOdds}%` }}
+                          ></div>
+                        </div>
+                        <div className="flex-1 text-center">
+                          <div className="text-lg font-bold text-white">{aiPrediction.predictedAwayWinOdds}%</div>
+                          <div className="text-[10px] text-slate-500 uppercase">{aiPrediction.awayTeam}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-slate-500">
+                    Prediction data currently unavailable.
+                  </div>
+                )}
               </div>
             )}
 

@@ -99,10 +99,10 @@ export default function Markets() {
 
   const {
     data: liveMarkets,
-    isLoading,
-    isError,
-    refetch,
-    isFetching,
+    isLoading: isTopLoading,
+    isError: isTopError,
+    refetch: refetchTop,
+    isFetching: isTopFetching,
   } = trpc.markets.top.useQuery(
     { limit: 20 },
     {
@@ -112,10 +112,36 @@ export default function Markets() {
     }
   );
 
-  // Use live data if available, otherwise fallback
-  const allMarkets: Market[] =
-    liveMarkets && liveMarkets.length > 0 ? liveMarkets : FALLBACK_MARKETS;
-  const isLive = !isError && liveMarkets && liveMarkets.length > 0;
+  const {
+    data: worldCupMarkets,
+    isLoading: isWCLoading,
+    refetch: refetchWC,
+    isFetching: isWCFetching,
+  } = trpc.markets.worldCup.useQuery(undefined, {
+    staleTime: 300_000,
+    refetchOnWindowFocus: false,
+  });
+
+  const isLoading = isTopLoading || isWCLoading;
+  const isFetching = isTopFetching || isWCFetching;
+  const isError = isTopError;
+  const refetch = () => {
+    refetchTop();
+    refetchWC();
+  };
+
+  // Combine live data, world cup data, and fallback
+  const allMarkets: Market[] = [
+    ...(worldCupMarkets || []),
+    ...(liveMarkets || (isTopError ? FALLBACK_MARKETS : [])),
+  ];
+  
+  // If no live data and no world cup data, use fallback
+  if (allMarkets.length === 0 && !isLoading) {
+    allMarkets.push(...FALLBACK_MARKETS);
+  }
+
+  const isLive = !isError && (liveMarkets?.length || 0) > 0;
 
   // Derive unique event types from data
   const eventTypes = [
