@@ -1,0 +1,111 @@
+{
+  "common": {
+    "connectWallet": "連接錢包",
+    "disconnect": "斷開連接",
+    "loading": "加載中...",
+    "error": "錯誤",
+    "success": "成功",
+    "cancel": "取消",
+    "confirm": "確認",
+    "save": "保存",
+    "delete": "刪除",
+    "edit": "編輯",
+    "back": "返回",
+    "next": "下一步",
+    "previous": "上一步"
+  },
+  "navigation": {
+    "home": "首頁",
+    "markets": "市場",
+    "leaderboard": "排行榜",
+    "portfolio": "我的投資組合",
+    "settings": "設置"
+  },
+  "markets": {
+    "title": "市場",
+    "subtitle": "預測未來，自信交易",
+    "searchPlaceholder": "搜索市場...",
+    "filterByCategory": "按類別篩選",
+    "allCategories": "所有類別",
+    "sports": "體育",
+    "politics": "政治",
+    "crypto": "加密貨幣",
+    "entertainment": "娛樂",
+    "other": "其他",
+    "trending": "熱門",
+    "endDate": "結束日期",
+    "volume": "交易量",
+    "odds": "賠率",
+    "bet": "下注",
+    "betNow": "立即下注",
+    "demoMode": "演示模式 - 下注已禁用",
+    "noMarkets": "未找到市場"
+  },
+  "leaderboard": {
+    "title": "排行榜",
+    "subtitle": "頂級交易者及其策略",
+    "rank": "排名",
+    "trader": "交易者",
+    "totalAssets": "總資產 (TVL)",
+    "roi": "7日收益率",
+    "winRate": "勝率",
+    "followers": "追隨者",
+    "action": "操作",
+    "copyTrade": "複製跟單",
+    "following": "已跟單",
+    "viewDetails": "查看詳情"
+  },
+  "portfolio": {
+    "title": "我的投資組合",
+    "subtitle": "追蹤您的投資和績效",
+    "totalValue": "投資組合總價值",
+    "totalGain": "總收益/虧損",
+    "gainPercent": "收益百分比",
+    "positions": "頭寸",
+    "history": "歷史",
+    "noPositions": "無活躍頭寸",
+    "noHistory": "無交易歷史"
+  },
+  "betting": {
+    "title": "下注",
+    "selectOutcome": "選擇結果",
+    "yes": "是",
+    "no": "否",
+    "amount": "金額 (USDC)",
+    "expectedPayout": "預期收益",
+    "placeBet": "下注",
+    "betPlaced": "下注成功",
+    "betFailed": "下注失敗",
+    "insufficientBalance": "餘額不足"
+  },
+  "copyTrading": {
+    "title": "複製跟單",
+    "subtitle": "跟隨並複製頂級交易者",
+    "leaderName": "領導者名稱",
+    "leaderStats": "領導者統計",
+    "depositAmount": "存款金額 (USDC)",
+    "totalAssets": "總資產",
+    "roi": "收益率",
+    "winRate": "勝率",
+    "quickAmounts": "快速金額",
+    "deposit": "存款",
+    "depositSuccess": "存款成功",
+    "depositFailed": "存款失敗",
+    "approveUsdc": "批准 USDC",
+    "approveSuccess": "USDC 已批准",
+    "approveFailed": "批准失敗"
+  },
+  "language": {
+    "title": "語言",
+    "english": "English",
+    "chineseTraditional": "繁體中文",
+    "spanish": "Español"
+  },
+  "errors": {
+    "walletNotConnected": "錢包未連接",
+    "wrongNetwork": "錯誤的網絡",
+    "transactionFailed": "交易失敗",
+    "networkError": "網絡錯誤",
+    "unknownError": "發生未知錯誤"
+  }
+}

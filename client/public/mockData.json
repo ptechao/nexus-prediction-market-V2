@@ -1,0 +1,120 @@
+{
+  "markets": [
+    {
+      "id": 1,
+      "title": "Lakers vs Warriors",
+      "description": "Will the Lakers beat the Warriors in the NBA Finals?",
+      "eventType": "sports",
+      "category": "NBA",
+      "endDate": "2026-06-15T23:59:59Z",
+      "yesOdds": 62,
+      "noOdds": 38,
+      "totalPool": 1250000,
+      "volume24h": 450000,
+      "status": "open",
+      "image": "https://images.unsplash.com/photo-1546519638-68711109d298?w=400&h=300&fit=crop",
+      "isTrending": true
+    },
+    {
+      "id": 2,
+      "title": "Bitcoin will reach $100k by end of Q2 2026",
+      "description": "Will Bitcoin's price reach $100,000 USD by June 30, 2026?",
+      "eventType": "crypto",
+      "category": "Bitcoin",
+      "endDate": "2026-06-30T23:59:59Z",
+      "yesOdds": 55,
+      "noOdds": 45,
+      "totalPool": 3500000,
+      "volume24h": 850000,
+      "status": "open",
+      "image": "https://images.unsplash.com/photo-1621761191319-c6fb62b63ef5?w=400&h=300&fit=crop",
+      "isTrending": true
+    },
+    {
+      "id": 3,
+      "title": "Taylor Swift wins Grammy for Album of the Year",
+      "description": "Will Taylor Swift win the Grammy Award for Album of the Year in 2026?",
+      "eventType": "entertainment",
+      "category": "Music",
+      "endDate": "2026-02-28T23:59:59Z",
+      "yesOdds": 48,
+      "noOdds": 52,
+      "totalPool": 680000,
+      "volume24h": 125000,
+      "status": "open",
+      "image": "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=300&fit=crop",
+      "isTrending": false
+    },
+    {
+      "id": 4,
+      "title": "S&P 500 closes above 6500 by March 2026",
+      "description": "Will the S&P 500 index close above 6500 points by March 31, 2026?",
+      "eventType": "finance",
+      "category": "Stock Market",
+      "endDate": "2026-03-31T23:59:59Z",
+      "yesOdds": 71,
+      "noOdds": 29,
+      "totalPool": 2100000,
+      "volume24h": 620000,
+      "status": "open",
+      "image": "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=400&h=300&fit=crop",
+      "isTrending": true
+    },
+    {
+      "id": 5,
+      "title": "Ethereum will flip Bitcoin in market cap",
+      "description": "Will Ethereum's market cap exceed Bitcoin's market cap by December 2026?",
+      "eventType": "crypto",
+      "category": "Ethereum",
+      "endDate": "2026-12-31T23:59:59Z",
+      "yesOdds": 18,
+      "noOdds": 82,
+      "totalPool": 1850000,
+      "volume24h": 340000,
+      "status": "open",
+      "image": "https://images.unsplash.com/photo-1518546305927-30bfcb02f298?w=400&h=300&fit=crop",
+      "isTrending": false
+    }
+  ],
+  "leaders": [
+    {
+      "id": 1,
+      "name": "Alex Chen",
+      "handle": "@alexchen",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
+      "roi": 156.8,
+      "winRate": 0.68,
+      "totalTrades": 42,
+      "followers": 3250,
+      "vaultSize": 2500000,
+      "description": "Crypto and DeFi specialist with consistent returns",
+      "badges": ["verified", "top_trader"]
+    },
+    {
+      "id": 2,
+      "name": "Sarah Williams",
+      "handle": "@sarahw",
+      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
+      "roi": 89.4,
+      "winRate": 0.62,
+      "totalTrades": 58,
+      "followers": 5120,
+      "vaultSize": 4200000,
+      "description": "Traditional markets and macro analysis expert",
+      "badges": ["verified"]
+    },
+    {
+      "id": 3,
+      "name": "Marcus Johnson",
+      "handle": "@mjohnson",
+      "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop",
+      "roi": 203.2,
+      "winRate": 0.71,
+      "totalTrades": 35,
+      "followers": 8940,
+      "vaultSize": 6800000,
+      "description": "Sports betting and event prediction specialist",
+      "badges": ["verified", "top_trader", "elite"]
+    }
+  ]
+}

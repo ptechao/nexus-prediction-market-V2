@@ -1,0 +1,111 @@
+{
+  "common": {
+    "connectWallet": "Connect Wallet",
+    "disconnect": "Disconnect",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous"
+  },
+  "navigation": {
+    "home": "Home",
+    "markets": "Markets",
+    "leaderboard": "Leaderboard",
+    "portfolio": "My Portfolio",
+    "settings": "Settings"
+  },
+  "markets": {
+    "title": "Markets",
+    "subtitle": "Predict the future and trade with confidence",
+    "searchPlaceholder": "Search markets...",
+    "filterByCategory": "Filter by Category",
+    "allCategories": "All Categories",
+    "sports": "Sports",
+    "politics": "Politics",
+    "crypto": "Crypto",
+    "entertainment": "Entertainment",
+    "other": "Other",
+    "trending": "Trending",
+    "endDate": "End Date",
+    "volume": "Volume",
+    "odds": "Odds",
+    "bet": "Bet",
+    "betNow": "Bet Now",
+    "demoMode": "Demo Mode - Betting is disabled",
+    "noMarkets": "No markets found"
+  },
+  "leaderboard": {
+    "title": "Leaderboard",
+    "subtitle": "Top traders and their strategies",
+    "rank": "Rank",
+    "trader": "Trader",
+    "totalAssets": "Total Assets (TVL)",
+    "roi": "7-Day ROI",
+    "winRate": "Win Rate",
+    "followers": "Followers",
+    "action": "Action",
+    "copyTrade": "Copy Trade",
+    "following": "Following",
+    "viewDetails": "View Details"
+  },
+  "portfolio": {
+    "title": "My Portfolio",
+    "subtitle": "Track your investments and performance",
+    "totalValue": "Total Portfolio Value",
+    "totalGain": "Total Gain/Loss",
+    "gainPercent": "Gain %",
+    "positions": "Positions",
+    "history": "History",
+    "noPositions": "No active positions",
+    "noHistory": "No transaction history"
+  },
+  "betting": {
+    "title": "Place a Bet",
+    "selectOutcome": "Select Outcome",
+    "yes": "Yes",
+    "no": "No",
+    "amount": "Amount (USDC)",
+    "expectedPayout": "Expected Payout",
+    "placeBet": "Place Bet",
+    "betPlaced": "Bet placed successfully",
+    "betFailed": "Failed to place bet",
+    "insufficientBalance": "Insufficient balance"
+  },
+  "copyTrading": {
+    "title": "Copy Trading",
+    "subtitle": "Follow and copy top traders",
+    "leaderName": "Leader Name",
+    "leaderStats": "Leader Stats",
+    "depositAmount": "Deposit Amount (USDC)",
+    "totalAssets": "Total Assets",
+    "roi": "ROI",
+    "winRate": "Win Rate",
+    "quickAmounts": "Quick Amounts",
+    "deposit": "Deposit",
+    "depositSuccess": "Deposit successful",
+    "depositFailed": "Deposit failed",
+    "approveUsdc": "Approve USDC",
+    "approveSuccess": "USDC approved",
+    "approveFailed": "Approval failed"
+  },
+  "language": {
+    "title": "Language",
+    "english": "English",
+    "chineseTraditional": "繁體中文",
+    "spanish": "Español"
+  },
+  "errors": {
+    "walletNotConnected": "Wallet not connected",
+    "wrongNetwork": "Wrong network",
+    "transactionFailed": "Transaction failed",
+    "networkError": "Network error",
+    "unknownError": "Unknown error occurred"
+  }
+}
