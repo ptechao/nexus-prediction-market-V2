@@ -22,7 +22,7 @@ The Nexus Prediction Market application has been successfully built, configured,
   - Bundler: esbuild with ESM format
 
 ### Server Status
-- **Process**: Running (PID: 14658)
+- **Process**: Running (PID: 18237)
 - **Port**: 3000
 - **Memory**: ~127 MB
 - **CPU**: Stable
@@ -78,8 +78,8 @@ This is a temporary public proxied domain that provides access to the deployed s
 
 ### 3. AI Prediction System
 **Endpoint**: `/api/trpc/markets.worldCupPrediction`  
-**Status**: ⚠️ Requires LLM Configuration  
-**Note**: Currently returns null as it requires OpenAI API key configuration
+**Status**: ✅ Working (Requires `OPENAI_API_KEY`)
+**Note**: AI predictions are now enabled with the configured `OPENAI_API_KEY`.
 
 ---
 
@@ -110,6 +110,9 @@ dist/
 - **Port**: 3000
 - **Frontend Build**: Vite production build
 - **Backend Runtime**: Node.js ESM
+- **`OPENAI_API_KEY`**: Configured (from system environment)
+- **`OAUTH_SERVER_URL`**: `https://auth.example.com` (configured in `.env`)
+- **`DATABASE_URL`**: `file:./nexus.db` (configured in `.env`)
 
 ### Required Environment Variables (For Full Functionality)
 ```bash
@@ -150,7 +153,7 @@ OPENAI_API_KEY=your_openai_api_key
 ### Core Features
 - ✅ Polymarket API integration with live market data
 - ✅ World Cup 2026 prediction markets (64 matches)
-- ✅ AI-powered match predictions
+- ✅ AI-powered analysis for match predictions
 - ✅ Advanced market search and filtering
 - ✅ Market statistics and visualizations
 - ✅ User portfolio tracking
@@ -230,16 +233,14 @@ OPENAI_API_KEY=your_openai_api_key
 ## 🐛 Known Issues & Limitations
 
 ### Current Limitations
-1. **AI Predictions**: Requires OpenAI API key configuration
-2. **OAuth**: Not fully configured (warning in logs)
-3. **Database**: Using mock data for World Cup markets
-4. **Smart Contracts**: Not deployed to blockchain
+1. **OAuth**: Not fully configured (warning in logs, requires `OAUTH_CLIENT_SECRET`)
+2. **Database**: Using local SQLite for World Cup markets, requires MySQL for full persistence
+3. **Smart Contracts**: Not deployed to blockchain
 
 ### Recommendations
 - Deploy smart contracts to Polygon testnet
 - Set up proper database with migrations
 - Configure OAuth provider
-- Enable AI predictions with LLM
 
 ---
 
