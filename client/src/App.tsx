@@ -11,6 +11,8 @@ import Markets from "./pages/Markets";
 import MarketDetail from "./pages/MarketDetail";
 import Leaderboard from "./pages/Leaderboard";
 import VaultDetails from "./pages/VaultDetails";
+import Portfolio from "./pages/Portfolio";
+import Profile from "./pages/Profile";
 import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import { WagmiProvider } from 'wagmi';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
@@ -28,6 +30,8 @@ function Router() {
       <Route path="/markets/:id" component={MarketDetail} />
       <Route path="/leaderboard" component={Leaderboard} />
       <Route path="/vault/:id" component={VaultDetails} />
+      <Route path="/portfolio" component={Portfolio} />
+      <Route path="/profile" component={Profile} />
       <Route path="/404" component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

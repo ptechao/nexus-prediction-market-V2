@@ -12,7 +12,10 @@
     "edit": "编辑",
     "back": "返回",
     "next": "下一步",
-    "previous": "上一步"
+    "previous": "上一步",
+    "on": "于",
+    "by": "按",
+    "balance": "余额"
   },
   "navigation": {
     "home": "首页",
@@ -39,7 +42,8 @@
     "bet": "下注",
     "betNow": "立即下注",
     "demoMode": "演示模式 - 下注已禁用",
-    "noMarkets": "未找到市场"
+    "noMarkets": "未找到市场",
+    "marketsByCategory": "按类别划分的市场"
   },
   "leaderboard": {
     "title": "排行榜",
@@ -111,5 +115,34 @@
     "transactionFailed": "交易失败",
     "networkError": "网络错误",
     "unknownError": "发生未知错误"
+  },
+  "home": {
+    "heroTitle1": "下一代",
+    "heroTitle2": "预测市场",
+    "heroSubtitle": "交易任何事件。賺取真实回报。体验基于 AI 分析的去中心化预测的力量。",
+    "exploreMarkets": "探索市场",
+    "viewAll": "查看所有",
+    "trendingMarkets": "热门市场",
+    "worldCupTitle": "2026 世界杯专区",
+    "worldCupSubtitle": "AI 驱动的赛事分析与预测",
+    "seeAllMatches": "查看所有赛事",
+    "whyNexus": "为什么选择 NEXUS?",
+    "instantSettlement": "即时结算",
+    "instantSettlementDesc": "基于链上智能合约的即时结算，透明的预言机验证。",
+    "secureAudited": "安全审计",
+    "secureAuditedDesc": "由领先安全公司审计的智能合约，确保最高安全性。",
+    "copyTrading": "跟单交易",
+    "copyTradingDesc": "跟随顶级交易者，自动复制他们的获胜策略。",
+    "highLiquidity": "高流动性",
+    "highLiquidityDesc": "深厚的订单簿和极小的价差，提供最佳交易条件。",
+    "readyTitle": "准备好开始预测了吗？",
+    "readySubtitle": "加入数千名交易者的行列，立即开始获取回报。",
+    "startPredicting": "开始预测",
+    "totalVolume": "总交易量",
+    "traders": "交易者",
+    "activeMarkets": "活跃市场",
+    "hotMarkets": "热门市场",
+    "live": "实时",
+    "offline": "离线"
   }
 }

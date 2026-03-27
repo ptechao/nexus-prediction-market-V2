@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { MarketCard, MarketCardSkeleton, formatPool, type Market } from '@/components/MarketCard';
+import { useTranslation } from '@/hooks/useTranslation';
 
 // ─── Fallback Mock Data (shown when API is unavailable) ────────────────
 const FALLBACK_MARKETS: Market[] = [
@@ -61,6 +62,7 @@ const FALLBACK_MARKETS: Market[] = [
 
 // ─── Home Page ─────────────────────────────────────────────────────────
 export default function Home() {
+  const { t } = useTranslation();
   const { data: liveMarkets, isLoading, isError } = trpc.markets.top.useQuery(
     { limit: 6 },
     {
@@ -80,80 +82,75 @@ export default function Home() {
   const totalTraders = markets.reduce((sum, m) => sum + m.participants, 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Hero */}
-      <section className="relative py-16 sm:py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
-        </div>
-
-        <div className="relative max-w-7xl mx-auto text-center">
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-5">
-            <span className="text-white">Predict the Future,</span>
-            <br />
-            <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
-              Trade with Confidence
+      <section className="relative py-16 sm:py-24 px-4 sm:px-6 lg:px-8 overflow-hidden border-b border-border bg-card">
+        <div className="relative max-w-5xl mx-auto text-center">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight mb-6 text-foreground">
+            {t('home.heroTitle1') || 'Predict the Future,'}{' '}
+            <span className="text-primary">
+              {t('home.heroTitle2') || 'Trade with Confidence'}
             </span>
           </h1>
-          <p className="text-lg text-slate-400 max-w-2xl mx-auto mb-8">
-            Join NEXUS — the decentralized prediction market platform. Bet on
-            real-world events and copy the strategies of top traders.
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-10">
+            {t('home.heroSubtitle') || 'Join NEXUS — the decentralized prediction market platform. Experience the power of decentralized predictions with AI-driven insights.'}
           </p>
 
           {/* Stats */}
-          <div className="flex justify-center gap-8 sm:gap-14 mb-4">
-            <div>
-              <div className="text-2xl sm:text-3xl font-bold text-cyan-400">
+          <div className="flex justify-center gap-8 sm:gap-16 mb-6">
+            <div className="flex flex-col items-center">
+              <div className="text-3xl font-bold text-foreground mb-1">
                 {formatPool(totalVolume)}
               </div>
-              <p className="text-sm text-slate-500">Total Volume</p>
+              <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t('home.totalVolume') || 'Total Volume'}</p>
             </div>
-            <div>
-              <div className="text-2xl sm:text-3xl font-bold text-cyan-400">
+            <div className="w-px h-12 bg-border hidden sm:block"></div>
+            <div className="flex flex-col items-center">
+              <div className="text-3xl font-bold text-foreground mb-1">
                 {markets.length.toLocaleString()}
               </div>
-              <p className="text-sm text-slate-500">Active Markets</p>
+              <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t('home.activeMarkets') || 'Active Markets'}</p>
             </div>
-            <div>
-              <div className="text-2xl sm:text-3xl font-bold text-cyan-400">
+            <div className="w-px h-12 bg-border hidden sm:block"></div>
+            <div className="flex flex-col items-center">
+              <div className="text-3xl font-bold text-foreground mb-1">
                 {totalTraders >= 1_000_000
                   ? `${(totalTraders / 1_000_000).toFixed(1)}M`
                   : totalTraders >= 1_000
                     ? `${(totalTraders / 1_000).toFixed(1)}K`
                     : totalTraders.toLocaleString()}
               </div>
-              <p className="text-sm text-slate-500">Traders</p>
+              <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t('home.traders') || 'Traders'}</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* ── Hot Markets ── */}
-      <section className="px-4 sm:px-6 lg:px-8 pb-16">
+      <section className="px-4 sm:px-6 lg:px-8 py-16">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
-              <Flame className="w-6 h-6 text-orange-400" />
-              <h2 className="text-2xl font-bold text-white">Hot Markets</h2>
+              <Flame className="w-6 h-6 text-orange-500" />
+              <h2 className="text-2xl font-bold text-foreground">{t('home.hotMarkets') || 'Trending Markets'}</h2>
               {/* Live indicator */}
               {isLive ? (
-                <span className="inline-flex items-center gap-1 text-xs text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                <span className="inline-flex items-center gap-1 text-xs text-green-600 bg-green-100 dark:bg-green-500/10 dark:text-green-400 px-2 py-0.5 rounded-full font-medium">
                   <Wifi className="w-3 h-3" />
-                  Live
+                  {t('home.live') || 'Live'}
                 </span>
               ) : isError ? (
-                <span className="inline-flex items-center gap-1 text-xs text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                <span className="inline-flex items-center gap-1 text-xs text-orange-600 bg-orange-100 dark:bg-orange-500/10 dark:text-orange-400 px-2 py-0.5 rounded-full font-medium">
                   <WifiOff className="w-3 h-3" />
-                  Offline
+                  {t('home.offline') || 'Offline'}
                 </span>
               ) : null}
             </div>
             <Link
               href="/markets"
-              className="inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+              className="inline-flex items-center gap-1 text-primary hover:text-primary/80 font-medium transition-colors"
             >
-              View All Markets
+              View All
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -171,48 +168,73 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Features */}
+      {/* ── World Cup Specials ── */}
       <section className="px-4 sm:px-6 lg:px-8 pb-16">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-2xl font-bold text-white text-center mb-10">
-            Why Choose NEXUS?
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 p-2 rounded-lg">
+                <Zap className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-foreground">{t('home.worldCupTitle') || 'Sports Specials'}</h2>
+                <p className="text-sm text-muted-foreground">{t('home.worldCupSubtitle') || 'AI-powered match analysis & predictions'}</p>
+              </div>
+            </div>
+            <Link
+              href="/markets?category=World%20Cup%20%E2%98%85"
+              className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+            >
+              {t('home.seeAllMatches') || 'See All Matches'}
+            </Link>
+          </div>
+
+          <WorldCupPreview />
+        </div>
+      </section>
+
+      {/* Features */}
+      <section className="px-4 sm:px-6 lg:px-8 py-16 bg-muted/50 border-y border-border">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-2xl font-bold text-foreground text-center mb-10">
+            {t('home.whyNexus') || 'Why Choose NEXUS?'}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               {
                 icon: Zap,
-                title: 'Instant Settlement',
-                desc: 'Bets resolved instantly on-chain with transparent oracle verification.',
-                color: 'text-yellow-400',
+                title: t('home.instantSettlement') || 'Instant Settlement',
+                desc: t('home.instantSettlementDesc') || 'Bets resolved instantly on-chain with transparent oracle verification.',
+                color: 'text-amber-500',
               },
               {
                 icon: Shield,
-                title: 'Secure & Audited',
-                desc: 'Smart contracts audited by leading security firms for maximum safety.',
-                color: 'text-emerald-400',
+                title: t('home.secureAudited') || 'Secure & Audited',
+                desc: t('home.secureAuditedDesc') || 'Smart contracts audited by leading security firms for maximum safety.',
+                color: 'text-emerald-500',
               },
               {
                 icon: Copy,
-                title: 'Copy Trading',
-                desc: 'Follow top traders and replicate their winning strategies automatically.',
-                color: 'text-cyan-400',
+                title: t('home.copyTrading') || 'Copy Trading',
+                desc: t('home.copyTradingDesc') || 'Follow top traders and replicate their winning strategies automatically.',
+                color: 'text-blue-500',
               },
               {
                 icon: Droplets,
-                title: 'High Liquidity',
-                desc: 'Deep order books and tight spreads for optimal trading conditions.',
-                color: 'text-blue-400',
+                title: t('home.highLiquidity') || 'High Liquidity',
+                desc: t('home.highLiquidityDesc') || 'Deep order books and tight spreads for optimal trading conditions.',
+                color: 'text-indigo-500',
               },
             ].map((feature) => (
               <div
                 key={feature.title}
-                className="p-6 rounded-xl bg-slate-800/60 border border-slate-700/50 hover:border-slate-600/50 transition-all duration-300"
+                className="p-6 rounded-xl bg-card border border-border shadow-sm hover:shadow-md transition-all duration-300"
               >
                 <feature.icon className={`w-8 h-8 ${feature.color} mb-4`} />
-                <h3 className="text-lg font-semibold text-white mb-2">
+                <h3 className="text-lg font-semibold text-foreground mb-2">
                   {feature.title}
                 </h3>
-                <p className="text-sm text-slate-400 leading-relaxed">
+                <p className="text-sm text-muted-foreground leading-relaxed">
                   {feature.desc}
                 </p>
               </div>
@@ -222,21 +244,48 @@ export default function Home() {
       </section>
 
       {/* CTA */}
-      <section className="px-4 sm:px-6 lg:px-8 pb-16">
-        <div className="max-w-4xl mx-auto text-center py-14 px-8 rounded-2xl bg-gradient-to-r from-cyan-600/20 to-blue-600/20 border border-cyan-500/20">
-          <h2 className="text-3xl font-bold text-white mb-4">
-            Ready to Start Predicting?
+      <section className="px-4 sm:px-6 lg:px-8 py-20">
+        <div className="max-w-4xl mx-auto text-center py-16 px-8 rounded-2xl bg-primary text-primary-foreground shadow-sm">
+          <h2 className="text-3xl font-bold mb-4">
+            {t('home.readyTitle') || 'Ready to Start Predicting?'}
           </h2>
-          <p className="text-lg text-slate-300 mb-6">
-            Join thousands of traders on NEXUS and start earning returns today.
+          <p className="text-lg text-primary-foreground/80 mb-8 max-w-2xl mx-auto">
+            {t('home.readySubtitle') || 'Join thousands of traders on NEXUS and start earning returns today.'}
           </p>
           <Link href="/markets" className="inline-block">
-            <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold py-6 px-8 text-lg border-0 shadow-lg shadow-cyan-500/20">
-              Explore All Markets
+            <Button size="lg" className="bg-background text-foreground hover:bg-background/90 font-semibold px-8 text-lg border border-border/20 shadow-sm">
+              {t('home.startPredicting') || 'Explore All Markets'}
             </Button>
           </Link>
         </div>
       </section>
+    </div>
+  );
+}
+
+function WorldCupPreview() {
+  const { data: wcMarkets, isLoading } = trpc.markets.worldCup.useQuery(undefined, {
+    staleTime: 300_000,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <MarketCardSkeleton key={`wc-skel-${i}`} />
+        ))}
+      </div>
+    );
+  }
+
+  const trendingWC = wcMarkets?.filter((m) => m.isTrending).slice(0, 3) || [];
+  const displayWC = trendingWC.length > 0 ? trendingWC : (wcMarkets?.slice(0, 3) || []);
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {displayWC.map((market) => (
+        <MarketCard key={market.id} market={market} />
+      ))}
     </div>
   );
 }

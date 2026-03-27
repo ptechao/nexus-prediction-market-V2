@@ -33,6 +33,9 @@ export interface WorldCupMatch {
   broadcastNote?: string;
   startDate?: string;
   endDate?: string;
+  status?: "scheduled" | "live" | "finished" | "cancelled";
+  homeScore?: number;
+  awayScore?: number;
 }
 
 // Helper to generate flag URL
@@ -141,6 +144,9 @@ const groupStageMatches: WorldCupMatch[] = [
       "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800",
     analysis:
       "Opening match of World Cup 2026. Qatar hosts Ecuador in Mexico City.",
+    status: "finished",
+    homeScore: 1,
+    awayScore: 2,
   },
   {
     id: "wc-2026-002",
@@ -172,6 +178,9 @@ const groupStageMatches: WorldCupMatch[] = [
     heroImage:
       "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800",
     analysis: "Classic matchup between England and USA in group stage.",
+    status: "finished",
+    homeScore: 0,
+    awayScore: 0,
   },
   {
     id: "wc-2026-003",

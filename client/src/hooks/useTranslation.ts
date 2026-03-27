@@ -6,9 +6,13 @@
 import { useLanguage } from './useLanguage';
 import en from '../../../messages/en.json';
 import zhTW from '../../../messages/zh-TW.json';
+import zhCN from '../../../messages/zh-CN.json';
 import es from '../../../messages/es.json';
+import ja from '../../../messages/ja.json';
+import ko from '../../../messages/ko.json';
+import th from '../../../messages/th.json';
 
-type SupportedLanguage = 'en' | 'zh-TW' | 'es';
+type SupportedLanguage = 'en' | 'zh-TW' | 'zh-CN' | 'ja' | 'ko' | 'th' | 'es';
 
 type TranslationKeys = typeof en;
 
@@ -30,6 +34,14 @@ export function useTranslation(): UseTranslationReturn {
     switch (language) {
       case 'zh-TW':
         return zhTW as unknown as TranslationKeys;
+      case 'zh-CN':
+        return zhCN as unknown as TranslationKeys;
+      case 'ja':
+        return ja as unknown as TranslationKeys;
+      case 'ko':
+        return ko as unknown as TranslationKeys;
+      case 'th':
+        return th as unknown as TranslationKeys;
       case 'es':
         return es as unknown as TranslationKeys;
       case 'en':

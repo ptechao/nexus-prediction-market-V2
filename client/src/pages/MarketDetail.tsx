@@ -31,8 +31,31 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { trpc } from '@/lib/trpc';
-import { formatPool, formatDate, getCategoryColor, type Market } from '@/components/MarketCard';
+import { formatPool, type Market } from '@/components/MarketCard';
+import { useAITranslation } from '@/hooks/useAITranslation';
+import { AITranslatedText } from '@/components/AITranslatedText';
 import { toast } from 'sonner';
+import { useLanguageContext } from '@/contexts/LanguageContext';
+import messages from '../../../messages';
+import { useTranslation } from '@/hooks/useTranslation';
+
+// ─── Local Helpers ─────────────────────────────────────────────────────
+const getCategoryColor = (category: string) => {
+  const colors: Record<string, string> = {
+    'Politics': 'bg-blue-100 text-blue-800 border-blue-200',
+    'Crypto': 'bg-orange-100 text-orange-800 border-orange-200',
+    'Sports': 'bg-green-100 text-green-800 border-green-200',
+    'NBA': 'bg-purple-100 text-purple-800 border-purple-200',
+    'Bitcoin': 'bg-amber-100 text-amber-800 border-amber-200',
+    'Ethereum': 'bg-indigo-100 text-indigo-800 border-indigo-200',
+  };
+  return colors[category] || 'bg-slate-100 text-slate-800 border-slate-200';
+};
+
+const formatDate = (dateStr: string) => {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+};
 
 // ─── Fallback Mock Detail Data ─────────────────────────────────────────
 const MOCK_MARKET_DETAILS: Record<string, any> = {
@@ -344,18 +367,20 @@ function DetailSkeleton() {
 
 // ─── Not Found ─────────────────────────────────────────────────────────
 function MarketNotFound() {
+  const { language } = useLanguageContext();
+  const t = (messages as Record<string, any>)[language] || messages.en;
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-4">
       <div className="text-center">
         <XCircle className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-white mb-2">Market Not Found</h2>
+        <h2 className="text-2xl font-bold text-white mb-2">{t.errors.marketNotFound || 'Market Not Found'}</h2>
         <p className="text-slate-400 mb-6">
-          This market may have been removed or the ID is invalid.
+          {t.errors.marketNotAvailable || 'This market may have been removed or the ID is invalid.'}
         </p>
         <Link href="/markets">
           <Button className="bg-cyan-600 hover:bg-cyan-500 text-white border-0">
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Markets
+            {t.common.back || 'Back to Markets'}
           </Button>
         </Link>
       </div>
@@ -373,6 +398,8 @@ function TradingPanel({
   noOdds: number;
   title: string;
 }) {
+  const { language } = useLanguageContext();
+  const t = (messages as Record<string, any>)[language] || messages.en;
   const [activeTab, setActiveTab] = useState<'yes' | 'no'>('yes');
   const [amount, setAmount] = useState('');
 
@@ -385,11 +412,11 @@ function TradingPanel({
 
   const handlePlaceOrder = () => {
     if (amountNum <= 0) {
-      toast.error('Please enter a valid amount');
+      toast.error(t.errors.invalidAmount || 'Please enter a valid amount');
       return;
     }
     toast.success(
-      `Order submitted: Buy ${activeTab.toUpperCase()} ${estShares.toFixed(1)} shares for $${amountNum.toFixed(2)} USDC on "${title}"`
+      `${t.markets.bet} ${activeTab.toUpperCase()} ${estShares.toFixed(1)} ${t.portfolio.positions || 'shares'} for $${amountNum.toFixed(2)} USDC ${t.common.on || 'on'} "${title}"`
     );
     setAmount('');
   };
@@ -407,7 +434,7 @@ function TradingPanel({
           }`}
         >
           <TrendingUp className="w-4 h-4 inline mr-1.5 -mt-0.5" />
-          Buy Yes — {yesOdds}¢
+          {t.betting.buy || 'Buy'} {t.betting.yes || 'Yes'} — {yesOdds}¢
         </button>
         <button
           onClick={() => setActiveTab('no')}
@@ -418,7 +445,7 @@ function TradingPanel({
           }`}
         >
           <TrendingDown className="w-4 h-4 inline mr-1.5 -mt-0.5" />
-          Buy No — {noOdds}¢
+          {t.betting.buy || 'Buy'} {t.betting.no || 'No'} — {noOdds}¢
         </button>
       </div>
 
@@ -427,7 +454,7 @@ function TradingPanel({
         {/* Amount Input */}
         <div>
           <label className="text-xs font-medium text-slate-400 mb-1.5 block">
-            Amount (USDC)
+            {t.betting.amount || 'Amount'} (USDC)
           </label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">
@@ -460,24 +487,24 @@ function TradingPanel({
         {/* Order Summary */}
         <div className="space-y-2 p-3 rounded-lg bg-slate-900/50 border border-slate-700/30">
           <div className="flex justify-between text-sm">
-            <span className="text-slate-500">Price per share</span>
+            <span className="text-slate-500">{t.betting.pricePerShare || 'Price per share'}</span>
             <span className="text-slate-300 font-medium">${price.toFixed(2)}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-slate-500">Est. Shares</span>
+            <span className="text-slate-500">{t.betting.estShares || 'Est. Shares'}</span>
             <span className="text-slate-300 font-medium">
               {amountNum > 0 ? estShares.toFixed(2) : '0'}
             </span>
           </div>
           <div className="flex justify-between text-sm border-t border-slate-700/30 pt-2">
-            <span className="text-slate-500">Potential Return</span>
+            <span className="text-slate-500">{t.betting.potentialReturn || 'Potential Return'}</span>
             <span className="text-slate-300 font-bold">
               {amountNum > 0 ? `$${potentialReturn.toFixed(2)}` : '$0'}
             </span>
           </div>
           {amountNum > 0 && potentialProfit > 0 && (
             <div className="flex justify-between text-sm">
-              <span className="text-slate-500">Potential Profit</span>
+              <span className="text-slate-500">{t.betting.potentialProfit || 'Potential Profit'}</span>
               <span className="text-emerald-400 font-bold">
                 +${potentialProfit.toFixed(2)} ({((potentialProfit / amountNum) * 100).toFixed(0)}%)
               </span>
@@ -496,14 +523,14 @@ function TradingPanel({
           }`}
         >
           {amountNum > 0
-            ? `Place Order — Buy ${activeTab === 'yes' ? 'Yes' : 'No'}`
-            : 'Enter Amount to Trade'}
+            ? `${t.betting.placeOrder || 'Place Order'} — ${t.betting.buy || 'Buy'} ${activeTab === 'yes' ? (t.betting.yes || 'Yes') : (t.betting.no || 'No')}`
+            : (t.betting.enterAmountToTrade || 'Enter Amount to Trade')}
         </Button>
 
         <div className="flex items-start gap-2 text-xs text-slate-500">
           <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
           <span>
-            Connect your wallet to place real bets. Each share pays $1.00 if the outcome is correct.
+            {t.betting.connectWalletInfo || 'Connect your wallet to place real bets. Each share pays $1.00 if the outcome is correct.'}
           </span>
         </div>
       </div>
@@ -513,6 +540,8 @@ function TradingPanel({
 
 // ─── Market Detail Page ────────────────────────────────────────────────
 export default function MarketDetail() {
+  const { language } = useLanguageContext();
+  const t_i18n = (messages as Record<string, any>)[language] || messages.en;
   const [, params] = useRoute('/markets/:id');
   const marketId = params?.id || '';
   const [chartRange, setChartRange] = useState<'7d' | '30d' | '90d'>('30d');
@@ -564,13 +593,13 @@ export default function MarketDetail() {
     const end = new Date(market.endDate).getTime();
     const now = Date.now();
     const diff = end - now;
-    if (diff <= 0) return 'Ended';
+    if (diff <= 0) return t_i18n.common.ended || 'Ended';
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    if (days > 365) return `${Math.floor(days / 365)}y ${days % 365}d left`;
-    if (days > 30) return `${Math.floor(days / 30)}mo ${days % 30}d left`;
-    if (days > 0) return `${days}d left`;
+    if (days > 365) return `${Math.floor(days / 365)}${t_i18n.common.yearShort || 'y'} ${days % 365}${t_i18n.common.dayShort || 'd'} ${t_i18n.common.left || 'left'}`;
+    if (days > 30) return `${Math.floor(days / 30)}${t_i18n.common.monthShort || 'mo'} ${days % 30}${t_i18n.common.dayShort || 'd'} ${t_i18n.common.left || 'left'}`;
+    if (days > 0) return `${days}${t_i18n.common.dayShort || 'd'} ${t_i18n.common.left || 'left'}`;
     const hours = Math.floor(diff / (1000 * 60 * 60));
-    return `${hours}h left`;
+    return `${hours}${t_i18n.common.hourShort || 'h'} ${t_i18n.common.left || 'left'}`;
   };
 
   return (
@@ -579,49 +608,51 @@ export default function MarketDetail() {
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-slate-500 mb-6">
           <Link href="/" className="hover:text-cyan-400 transition-colors">
-            Home
+            {t_i18n.common.home || 'Home'}
           </Link>
           <ChevronRight className="w-3 h-3" />
           <Link href="/markets" className="hover:text-cyan-400 transition-colors">
-            Markets
+            {t_i18n.common.markets || 'Markets'}
           </Link>
           <ChevronRight className="w-3 h-3" />
-          <span className="text-slate-300 truncate max-w-xs">{market.title}</span>
+          <AITranslatedText text={market.title} className="text-slate-300 truncate max-w-xs" />
         </nav>
 
         {/* Header */}
         <div className="mb-8">
           <div className="flex flex-wrap items-center gap-3 mb-3">
             <Badge className={`text-sm font-medium border ${getCategoryColor(market.category)}`}>
-              {market.category}
+              <AITranslatedText text={market.category} />
             </Badge>
             {market.isTrending && (
               <span className="inline-flex items-center gap-1 bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm shadow-orange-500/30">
                 <Flame className="w-3 h-3" />
-                Trending
+                {t_i18n.common.trending || 'Trending'}
               </span>
             )}
             {market.isActive ? (
               <span className="inline-flex items-center gap-1 text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
                 <Activity className="w-3 h-3" />
-                Active
+                {t_i18n.common.active || 'Active'}
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 text-xs text-slate-400 bg-slate-500/10 px-2.5 py-1 rounded-full border border-slate-500/20">
                 <XCircle className="w-3 h-3" />
-                Closed
+                {t_i18n.common.closed || 'Closed'}
               </span>
             )}
           </div>
 
-          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3 leading-tight">
-            {market.title}
-          </h1>
+          <AITranslatedText 
+            text={market.title} 
+            as="h1"
+            className="text-3xl sm:text-4xl font-bold text-white mb-3 leading-tight" 
+          />
 
           <div className="flex flex-wrap items-center gap-4 text-sm text-slate-400">
             <span className="flex items-center gap-1">
               <Calendar className="w-4 h-4" />
-              Ends {formatDate(market.endDate)}
+              {t_i18n.common.ends || 'Ends'} {formatDate(market.endDate)}
             </span>
             <span className="flex items-center gap-1">
               <Clock className="w-4 h-4" />
@@ -629,7 +660,7 @@ export default function MarketDetail() {
             </span>
             <span className="flex items-center gap-1">
               <MessageSquare className="w-4 h-4" />
-              {market.commentCount.toLocaleString()} comments
+              {market.commentCount.toLocaleString()} {t_i18n.common.comments || 'comments'}
             </span>
           </div>
         </div>
@@ -641,7 +672,7 @@ export default function MarketDetail() {
             {/* Price History Chart */}
             <div className="rounded-xl bg-slate-800/60 border border-slate-700/50 p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-white">Price History</h2>
+                <h2 className="text-lg font-semibold text-white">{t_i18n.markets.priceHistory || 'Price History'}</h2>
                 <div className="flex gap-1">
                   {(['7d', '30d', '90d'] as const).map((range) => (
                     <button
@@ -663,12 +694,12 @@ export default function MarketDetail() {
               <div className="flex items-center gap-6 mb-4">
                 <div>
                   <span className="text-4xl font-bold text-emerald-400">{market.yesOdds}¢</span>
-                  <span className="text-sm text-slate-500 ml-2">Yes</span>
+                  <span className="text-sm text-slate-500 ml-2">{t_i18n.betting.yes || 'Yes'}</span>
                 </div>
                 <div className="text-xl text-slate-600">|</div>
                 <div>
                   <span className="text-4xl font-bold text-red-400">{market.noOdds}¢</span>
-                  <span className="text-sm text-slate-500 ml-2">No</span>
+                  <span className="text-sm text-slate-500 ml-2">{t_i18n.betting.no || 'No'}</span>
                 </div>
               </div>
 
@@ -706,7 +737,7 @@ export default function MarketDetail() {
                       stroke="#10b981"
                       strokeWidth={2}
                       fill="url(#yesGradient)"
-                      name="Yes"
+                      name={t_i18n.betting.yes || 'Yes'}
                     />
                     <Area
                       type="monotone"
@@ -714,7 +745,7 @@ export default function MarketDetail() {
                       stroke="#ef4444"
                       strokeWidth={1.5}
                       fill="url(#noGradient)"
-                      name="No"
+                      name={t_i18n.betting.no || 'No'}
                       strokeDasharray="4 4"
                     />
                   </AreaChart>
@@ -727,25 +758,25 @@ export default function MarketDetail() {
               {[
                 {
                   icon: DollarSign,
-                  label: 'Total Volume',
+                  label: t_i18n.markets.totalVolume || 'Total Volume',
                   value: formatPool(market.totalPool),
                   color: 'text-cyan-400',
                 },
                 {
                   icon: BarChart3,
-                  label: '24h Volume',
+                  label: t_i18n.markets.volume24h || '24h Volume',
                   value: formatPool(market.volume24h),
                   color: 'text-blue-400',
                 },
                 {
                   icon: BarChart3,
-                  label: 'Weekly Volume',
+                  label: t_i18n.markets.volume1wk || 'Weekly Volume',
                   value: formatPool(market.volume1wk),
                   color: 'text-purple-400',
                 },
                 {
                   icon: Users,
-                  label: 'Est. Traders',
+                  label: t_i18n.markets.estTraders || 'Est. Traders',
                   value:
                     market.participants >= 1_000_000
                       ? `${(market.participants / 1_000_000).toFixed(1)}M`
@@ -784,13 +815,15 @@ export default function MarketDetail() {
 
             {/* Description */}
             <div className="rounded-xl bg-slate-800/60 border border-slate-700/50 p-6">
-              <h2 className="text-lg font-semibold text-white mb-3">About This Market</h2>
-              <p className="text-slate-300 leading-relaxed whitespace-pre-wrap">
-                {market.fullDescription || market.description}
-              </p>
+              <h2 className="text-lg font-semibold text-white mb-3">{t_i18n.markets.aboutThisMarket || 'About This Market'}</h2>
+              <AITranslatedText 
+                text={market.fullDescription || market.description} 
+                as="p"
+                className="text-slate-300 leading-relaxed whitespace-pre-wrap" 
+              />
               {market.resolutionSource && (
                 <div className="mt-4 pt-4 border-t border-slate-700/50">
-                  <h3 className="text-sm font-semibold text-slate-400 mb-1">Resolution Source</h3>
+                  <h3 className="text-sm font-semibold text-slate-400 mb-1">{t_i18n.markets.resolutionSource || 'Resolution Source'}</h3>
                   <p className="text-sm text-slate-500">{market.resolutionSource}</p>
                 </div>
               )}
@@ -800,7 +833,7 @@ export default function MarketDetail() {
             {market.subMarkets && market.subMarkets.length > 1 && (
               <div className="rounded-xl bg-slate-800/60 border border-slate-700/50 p-6">
                 <h2 className="text-lg font-semibold text-white mb-4">
-                  All Outcomes ({market.subMarkets.length})
+                  {t_i18n.markets.allOutcomes || 'All Outcomes'} ({market.subMarkets.length})
                 </h2>
                 <div className="space-y-3">
                   {market.subMarkets.map((sub: any, idx: number) => (
@@ -820,10 +853,8 @@ export default function MarketDetail() {
                           />
                         )}
                         <div className="min-w-0">
-                          <p className="text-sm font-medium text-white truncate">
-                            {sub.question}
-                          </p>
-                          <p className="text-xs text-slate-500">Vol: {formatPool(sub.volume)}</p>
+                          <AITranslatedText as="p" text={sub.question} className="text-sm font-medium text-white truncate" />
+                          <p className="text-xs text-slate-500">{t_i18n.common.volumeShort || 'Vol'}: {formatPool(sub.volume)}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3 flex-shrink-0 ml-3">
@@ -850,24 +881,24 @@ export default function MarketDetail() {
             {marketId?.startsWith('wc-') && (
               <div className="rounded-xl bg-slate-800/60 border border-cyan-500/30 p-6 overflow-hidden relative">
                 <div className="absolute top-0 right-0 p-3">
-                  <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">AI Analysis</Badge>
+                  <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">{t_i18n.markets.aiAnalysis || 'AI Analysis'}</Badge>
                 </div>
                 <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                   <Activity className="w-6 h-6 text-cyan-400" />
-                  Nexus AI Prediction
+                  {t_i18n.markets.nexusAIPrediction || 'Nexus AI Prediction'}
                 </h2>
                 
                 {isAILoading ? (
                   <div className="flex flex-col items-center py-8 space-y-4">
                     <div className="w-10 h-10 border-4 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin"></div>
-                    <p className="text-slate-400 text-sm">Analyzing match data and historical performance...</p>
+                    <p className="text-slate-400 text-sm">{t_i18n.markets.analyzingMatchData || 'Analyzing match data and historical performance...'}</p>
                   </div>
                 ) : aiPrediction ? (
                   <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-4">
                         <div className="flex justify-between items-end">
-                          <span className="text-sm text-slate-400">Confidence Level</span>
+                          <span className="text-sm text-slate-400">{t_i18n.markets.confidenceLevel || 'Confidence Level'}</span>
                           <span className="text-2xl font-bold text-cyan-400">{aiPrediction.confidence}%</span>
                         </div>
                         <div className="w-full bg-slate-700/50 rounded-full h-2.5">
@@ -876,18 +907,20 @@ export default function MarketDetail() {
                             style={{ width: `${aiPrediction.confidence}%` }}
                           ></div>
                         </div>
-                        <p className="text-slate-300 text-sm leading-relaxed italic">
-                          "{aiPrediction.reasoning}"
-                        </p>
+                        <AITranslatedText 
+                          text={aiPrediction.reasoning} 
+                          as="p"
+                          className="text-slate-300 text-sm leading-relaxed italic" 
+                        />
                       </div>
                       
                       <div className="bg-slate-900/40 rounded-lg p-4 border border-slate-700/30">
-                        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Key Factors</h3>
+                        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">{t_i18n.markets.keyFactors || 'Key Factors'}</h3>
                         <ul className="space-y-2">
                           {aiPrediction.keyFactors.map((factor: string, idx: number) => (
                             <li key={idx} className="flex items-start gap-2 text-sm text-slate-300">
                               <ChevronRight className="w-4 h-4 text-cyan-500 mt-0.5 flex-shrink-0" />
-                              {factor}
+                              <AITranslatedText text={factor} />
                             </li>
                           ))}
                         </ul>
@@ -896,12 +929,12 @@ export default function MarketDetail() {
                     
                     <div className="pt-4 border-t border-slate-700/30">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-slate-500 uppercase">AI Win Probability</span>
+                        <span className="text-xs font-medium text-slate-500 uppercase">{t_i18n.markets.aiWinProbability || 'AI Win Probability'}</span>
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="flex-1 text-center">
                           <div className="text-lg font-bold text-white">{aiPrediction.predictedHomeWinOdds}%</div>
-                          <div className="text-[10px] text-slate-500 uppercase">{aiPrediction.homeTeam}</div>
+                          <AITranslatedText text={aiPrediction.homeTeam} as="div" className="text-[10px] text-slate-500 uppercase" />
                         </div>
                         <div className="flex-[3] h-4 bg-slate-700/30 rounded-full overflow-hidden flex">
                           <div 
@@ -915,7 +948,7 @@ export default function MarketDetail() {
                         </div>
                         <div className="flex-1 text-center">
                           <div className="text-lg font-bold text-white">{aiPrediction.predictedAwayWinOdds}%</div>
-                          <div className="text-[10px] text-slate-500 uppercase">{aiPrediction.awayTeam}</div>
+                          <AITranslatedText text={aiPrediction.awayTeam} as="div" className="text-[10px] text-slate-500 uppercase" />
                         </div>
                       </div>
                     </div>
@@ -933,7 +966,7 @@ export default function MarketDetail() {
               <div className="rounded-xl bg-slate-800/60 border border-slate-700/50 p-6">
                 <h2 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
                   <Tag className="w-5 h-5" />
-                  Tags
+                  {t_i18n.markets.tags || 'Tags'}
                 </h2>
                 <div className="flex flex-wrap gap-2">
                   {market.tags.map((tag: string) => (
@@ -964,19 +997,19 @@ export default function MarketDetail() {
                 <h3 className="text-sm font-semibold text-slate-400 mb-3">Market Info</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">Status</span>
+                    <span className="text-slate-500">{t_i18n.common.status || 'Status'}</span>
                     <span className={market.isActive ? 'text-emerald-400' : 'text-slate-400'}>
-                      {market.isActive ? 'Active' : market.isClosed ? 'Closed' : 'Inactive'}
+                      {market.isActive ? (t_i18n.markets.active || 'Active') : market.isClosed ? (t_i18n.markets.closed || 'Closed') : 'Inactive'}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">Created</span>
+                    <span className="text-slate-500">{t_i18n.common.createdAt || 'Created'}</span>
                     <span className="text-slate-300">
                       {market.startDate ? formatDate(market.startDate) : 'N/A'}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">End Date</span>
+                    <span className="text-slate-500">{t_i18n.markets.endDate || 'End Date'}</span>
                     <span className="text-slate-300">{formatDate(market.endDate)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
@@ -984,7 +1017,7 @@ export default function MarketDetail() {
                     <span className="text-slate-300">{formatPool(market.volume1mo)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">Sub-Markets</span>
+                    <span className="text-slate-500">{t_i18n.markets.subMarkets || 'Sub-Markets'}</span>
                     <span className="text-slate-300">{market.subMarkets?.length || 1}</span>
                   </div>
                 </div>
@@ -1014,7 +1047,7 @@ export default function MarketDetail() {
               className="bg-slate-800/60 hover:bg-slate-700/60 text-slate-300 border-slate-700/50"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to All Markets
+              {t_i18n.common.back || 'Back to All Markets'}
             </Button>
           </Link>
         </div>

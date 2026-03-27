@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { useMarkets } from '@/hooks/useMarkets';
 import { formatPoolSize, formatEndDate, getCategoryLabel, getCategoryColor } from '@/lib/mockMarkets';
 import { Search, TrendingUp, Users, Clock } from 'lucide-react';
+import { AITranslatedText } from '@/components/AITranslatedText';
 import { toast } from 'sonner';
 
 type CategoryFilter = 'all' | 'sports' | 'politics' | 'crypto' | 'entertainment' | 'other';
@@ -19,7 +20,8 @@ function MarketCard({ market }: { market: any }) {
   const [isBetting, setIsBetting] = useState(false);
   const [betOutcome, setBetOutcome] = useState<'yes' | 'no' | null>(null);
 
-  const handleBet = (outcome: 'yes' | 'no') => {
+  const handleBet = (outcome: 'yes' | 'no', e: React.MouseEvent) => {
+    e.stopPropagation();
     setBetOutcome(outcome);
     setIsBetting(true);
     toast.info(`Betting on ${outcome.toUpperCase()} for "${market.title}"`);
@@ -28,103 +30,75 @@ function MarketCard({ market }: { market: any }) {
   };
 
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300 h-full flex flex-col">
-      {/* Header with category and icon */}
-      <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-4 flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <div className="text-3xl">{market.icon}</div>
-          <div>
-            <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${getCategoryColor(market.category)}`}>
-              {getCategoryLabel(market.category)}
-            </span>
-          </div>
+    <div className="group relative overflow-hidden rounded-xl bg-card border border-border transition-all duration-200 hover:shadow-md cursor-pointer flex flex-col h-full">
+      {/* Header */}
+      <div className="px-4 pt-4 pb-2 flex items-start justify-between">
+        <div className="flex flex-wrap items-center gap-2">
+          {market.icon && <span className="text-lg leading-none">{market.icon}</span>}
+          <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-medium bg-secondary text-secondary-foreground">
+            {getCategoryLabel(market.category)}
+          </span>
         </div>
         <div className="text-right">
-          <p className="text-xs text-gray-500">Pool Size</p>
-          <p className="text-lg font-bold text-gray-900">{formatPoolSize(market.poolSize)}</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Pool Size</p>
+          <p className="text-sm font-bold text-foreground">{formatPoolSize(market.poolSize)}</p>
         </div>
       </div>
 
-      {/* Title */}
-      <div className="px-4 pt-4 pb-2">
-        <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 hover:text-blue-600 transition-colors">
-          {market.title}
-        </h3>
+      {/* Content */}
+      <div className="px-4 flex-[1]">
+        <AITranslatedText as="h3" className="font-medium text-base text-foreground mb-1 leading-snug line-clamp-3 group-hover:text-primary transition-colors" text={market.title} />
+        <AITranslatedText as="p" className="text-sm text-muted-foreground line-clamp-2 mt-2 leading-relaxed" text={market.description} />
       </div>
 
-      {/* Description */}
-      <div className="px-4 pb-4">
-        <p className="text-sm text-gray-600 line-clamp-2">{market.description}</p>
-      </div>
-
-      {/* Odds Visualization */}
-      <div className="px-4 py-4 border-t border-gray-200 bg-gray-50">
-        <div className="space-y-2">
-          {/* YES odds */}
-          <div>
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-sm font-medium text-gray-700">YES</span>
-              <span className="text-sm font-bold text-green-600">{market.yesOdds}%</span>
-            </div>
-            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-green-400 to-green-600 transition-all duration-300"
-                style={{ width: `${market.yesOdds}%` }}
-              />
-            </div>
-          </div>
-
-          {/* NO odds */}
-          <div>
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-sm font-medium text-gray-700">NO</span>
-              <span className="text-sm font-bold text-red-600">{market.noOdds}%</span>
-            </div>
-            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-red-400 to-red-600 transition-all duration-300"
-                style={{ width: `${market.noOdds}%` }}
-              />
-            </div>
-          </div>
+      {/* Odds Bar */}
+      <div className="px-4 mt-4">
+        <div className="flex justify-between items-center mb-1.5">
+          <span className="text-sm font-semibold text-blue-600 dark:text-blue-500">YES {market.yesOdds}%</span>
+          <span className="text-sm font-semibold text-red-500 dark:text-red-400">NO {market.noOdds}%</span>
+        </div>
+        <div className="h-1.5 rounded-full bg-muted overflow-hidden flex">
+          <div className="bg-blue-600 dark:bg-blue-500 transition-all duration-500" style={{ width: `${market.yesOdds}%` }} />
+          <div className="bg-red-500 dark:bg-red-400 transition-all duration-500" style={{ width: `${market.noOdds}%` }} />
         </div>
       </div>
 
       {/* Stats */}
-      <div className="px-4 py-3 border-t border-gray-200 grid grid-cols-3 gap-2 text-center">
+      <div className="px-4 py-3 mt-4 border-t border-border grid grid-cols-3 gap-2 text-center text-[10px] text-muted-foreground">
         <div>
-          <p className="text-xs text-gray-500">Volume 24h</p>
-          <p className="text-sm font-semibold text-gray-900">{formatPoolSize(market.volume24h)}</p>
+          <p className="mb-0.5 uppercase tracking-wider">Vol 24h</p>
+          <p className="font-bold text-foreground text-xs">{formatPoolSize(market.volume24h)}</p>
         </div>
         <div>
-          <p className="text-xs text-gray-500">Participants</p>
-          <p className="text-sm font-semibold text-gray-900">{market.participants.toLocaleString()}</p>
+          <p className="mb-0.5 uppercase tracking-wider">Traders</p>
+          <p className="font-bold text-foreground text-xs">{market.participants.toLocaleString()}</p>
         </div>
         <div>
-          <p className="text-xs text-gray-500">Ends in</p>
-          <p className="text-sm font-semibold text-gray-900">{formatEndDate(market.endDate)}</p>
+          <p className="mb-0.5 uppercase tracking-wider">Ends in</p>
+          <p className="font-bold text-foreground text-xs">{formatEndDate(market.endDate)}</p>
         </div>
       </div>
 
       {/* Bet Buttons */}
-      <div className="px-4 py-4 border-t border-gray-200 grid grid-cols-2 gap-2 mt-auto">
-        <Button
-          onClick={() => handleBet('yes')}
-          disabled={isBetting}
-          className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white"
-        >
-          Bet YES
-        </Button>
-        <Button
-          onClick={() => handleBet('no')}
-          disabled={isBetting}
-          variant="outline"
-          className="border-red-300 text-red-600 hover:bg-red-50"
-        >
-          Bet NO
-        </Button>
+      <div className="px-4 py-4 mt-auto">
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            onClick={(e) => handleBet('yes', e)}
+            disabled={isBetting && betOutcome === 'yes'}
+            className="bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 shadow-none font-semibold text-sm h-10 border border-blue-200 dark:border-blue-500/20 transition-colors"
+          >
+            Bet YES
+          </Button>
+          <Button
+            onClick={(e) => handleBet('no', e)}
+            disabled={isBetting && betOutcome === 'no'}
+            className="bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-500/10 dark:hover:bg-red-500/20 dark:text-red-400 shadow-none font-semibold text-sm h-10 border border-red-200 dark:border-red-500/20 transition-colors"
+          >
+            Bet NO
+          </Button>
+        </div>
       </div>
-    </Card>
+    </div>
   );
 }
 
@@ -157,12 +131,12 @@ export default function MarketsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background text-foreground py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Prediction Markets</h1>
-          <p className="text-lg text-gray-600">Bet on real-world events with real-time odds</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Prediction Markets</h1>
+          <p className="text-muted-foreground">Bet on real-world events with real-time odds</p>
         </div>
 
         {/* Demo Mode Alert */}
@@ -185,21 +159,21 @@ export default function MarketsPage() {
 
         {/* Stats Bar */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <Card className="p-4 bg-white">
-            <p className="text-xs text-gray-500 mb-1">Total Markets</p>
-            <p className="text-2xl font-bold text-gray-900">{stats.totalMarkets}</p>
+          <Card className="p-4 bg-card border border-border">
+            <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">Total Markets</p>
+            <p className="text-2xl font-bold text-foreground">{stats.totalMarkets}</p>
           </Card>
-          <Card className="p-4 bg-white">
-            <p className="text-xs text-gray-500 mb-1">Total Volume</p>
-            <p className="text-2xl font-bold text-gray-900">{formatPoolSize(stats.totalVolume)}</p>
+          <Card className="p-4 bg-card border border-border">
+            <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">Total Volume</p>
+            <p className="text-2xl font-bold text-foreground">{formatPoolSize(stats.totalVolume)}</p>
           </Card>
-          <Card className="p-4 bg-white">
-            <p className="text-xs text-gray-500 mb-1">Participants</p>
-            <p className="text-2xl font-bold text-gray-900">{stats.totalParticipants.toLocaleString()}</p>
+          <Card className="p-4 bg-card border border-border">
+            <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">Participants</p>
+            <p className="text-2xl font-bold text-foreground">{stats.totalParticipants.toLocaleString()}</p>
           </Card>
-          <Card className="p-4 bg-white">
-            <p className="text-xs text-gray-500 mb-1">Avg Pool Size</p>
-            <p className="text-2xl font-bold text-gray-900">{formatPoolSize(stats.averagePoolSize)}</p>
+          <Card className="p-4 bg-card border border-border">
+            <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">Avg Pool Size</p>
+            <p className="text-2xl font-bold text-foreground">{formatPoolSize(stats.averagePoolSize)}</p>
           </Card>
         </div>
 
@@ -269,7 +243,7 @@ export default function MarketsPage() {
           </div>
         ) : (
           <Card className="p-12 text-center">
-            <p className="text-lg text-gray-600">No markets found matching your criteria</p>
+            <p className="text-lg text-muted-foreground">No markets found matching your criteria</p>
             <Button
               variant="outline"
               onClick={() => {

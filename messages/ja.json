@@ -19,6 +19,7 @@
     "markets": "マーケット",
     "leaderboard": "リーダーボード",
     "portfolio": "ポートフォリオ",
+    "profile": "プロフィール",
     "settings": "設定"
   },
   "markets": {
@@ -111,5 +112,28 @@
     "transactionFailed": "トランザクションが失敗しました",
     "networkError": "ネットワークエラー",
     "unknownError": "不明なエラーが発生しました"
+  },
+  "home": {
+    "heroTitle1": "次世代の",
+    "heroTitle2": "予測市場",
+    "heroSubtitle": "あらゆるイベントで取引。リアルなリターンを獲得。AI分析による分散型予測の力を体験してください。",
+    "exploreMarkets": "市場を探索",
+    "viewAll": "すべて表示",
+    "trendingMarkets": "トレンド市場",
+    "worldCupTitle": "2026年ワールドカップ特集",
+    "worldCupSubtitle": "AIによる試合分析と予測",
+    "seeAllMatches": "すべての試合を見る",
+    "whyNexus": "なぜNEXUSを選ぶのか？",
+    "instantSettlement": "即時決済",
+    "instantSettlementDesc": "透明なオラクル検証により、オンチェーンで即座に決済されます。",
+    "secureAudited": "安全で監査済み",
+    "secureAuditedDesc": "主要なセキュリティ企業によって監査されたスマートコントラクトで、最大限の安全性を確保します。",
+    "copyTrading": "コピートレード",
+    "copyTradingDesc": "トップトレーダーをフォローし、彼らの勝利戦略を自動的に複製します。",
+    "highLiquidity": "高い流動性",
+    "highLiquidityDesc": "深いオーダーブックとタイトなスプレッドで、最適な取引条件を提供します。",
+    "readyTitle": "予測を始める準備はできましたか？",
+    "readySubtitle": "NEXUSで何千人ものトレーダーに加わり、今日から利益を獲得しましょう。",
+    "startPredicting": "予測を開始する"
   }
 }

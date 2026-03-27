@@ -2,6 +2,8 @@ import { useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, Users, DollarSign, Zap, Target } from 'lucide-react';
+import { useLanguageContext } from '@/contexts/LanguageContext';
+import messages from '../../../messages';
 
 interface VaultStatsProps {
   totalAssets: number;
@@ -24,6 +26,8 @@ export default function VaultStats({
   activePositions,
   leaderName,
 }: VaultStatsProps) {
+  const { language } = useLanguageContext();
+  const t = (messages as Record<string, any>)[language] || messages.en;
   // 計算關鍵指標
   const stats = useMemo(() => {
     const navChangePercent = ((navPerShare - highWaterMark) / highWaterMark) * 100;
@@ -60,17 +64,17 @@ export default function VaultStats({
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-2xl font-bold text-slate-900">
-                {leaderName}'s Vault
+                {leaderName}'s {t.portfolio.wallet || 'Vault'}
               </h2>
               <p className="text-sm text-slate-600 mt-1">
-                Pooled Copy Trading Fund
+                {t.leaderboard.subtitle || 'Pooled Copy Trading Fund'}
               </p>
             </div>
             <div className="flex gap-2">
               {isLocked && (
                 <Badge className="bg-orange-100 text-orange-800 flex items-center gap-1">
                   <Zap className="w-3 h-3" />
-                  Active Position
+                  {t.portfolio.positions || 'Active Position'}
                 </Badge>
               )}
               {stats.isAboveHighWaterMark && (
@@ -89,7 +93,7 @@ export default function VaultStats({
               <div className="flex items-center gap-2 mb-2">
                 <DollarSign className="w-4 h-4 text-blue-600" />
                 <span className="text-xs font-semibold text-slate-600 uppercase">
-                  Total Assets
+                  {t.portfolio.totalGain || 'Total Assets'}
                 </span>
               </div>
               <div className="text-2xl font-bold text-slate-900">
@@ -139,7 +143,7 @@ export default function VaultStats({
               <div className="flex items-center gap-2 mb-2">
                 <Zap className="w-4 h-4 text-orange-600" />
                 <span className="text-xs font-semibold text-slate-600 uppercase">
-                  Performance Fee
+                  {t.leaderboard.roi || 'Performance Fee'}
                 </span>
               </div>
               <div className="text-2xl font-bold text-orange-600">
@@ -213,7 +217,7 @@ export default function VaultStats({
             </div>
           </div>
           <div className="text-sm text-blue-900">
-            <p className="font-semibold mb-1">How it works</p>
+            <p className="font-semibold mb-1">{t.common.ok || 'How it works'}</p>
             <ul className="space-y-1 text-xs text-blue-800">
               <li>• Your deposit is converted to vault shares</li>
               <li>• Leader's bets are placed with pooled funds</li>

@@ -1,23 +1,22 @@
-'use client';
-
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getAllMockMarkets, getMockMarketsByCategory, getTrendingMockMarkets, getActiveMockMarkets } from '@/lib/mockMarkets';
 import { fetchTrendingMarketsFromPolymarket, fetchPolymarketByCategory, type NexusMarketFromPolymarket } from '@/lib/polymarketApi';
 import type { MockMarket } from '@/lib/mockMarkets';
+import { trpc } from '@/lib/trpc';
 
 type MarketCategory = 'sports' | 'politics' | 'crypto' | 'entertainment' | 'other' | 'all';
 type SortBy = 'volume' | 'participants' | 'endDate' | 'odds';
-type DataSource = 'mock' | 'polymarket' | 'auto';
+type DataSource = 'mock' | 'polymarket' | 'nexus' | 'auto';
 
 interface UseMarketsWithPolymarketOptions {
-  source?: DataSource; // 'auto' = try Polymarket first, fallback to mock
+  source?: DataSource; // 'auto' = try Nexus/Polymarket first, fallback to mock
   category?: MarketCategory;
   sortBy?: SortBy;
   limit?: number;
 }
 
 /**
- * Enhanced hook for market data management with Polymarket integration
+ * Enhanced hook for market data management with Polymarket & Nexus integration
  */
 export function useMarketsWithPolymarket(options: UseMarketsWithPolymarketOptions = {}) {
   const { source = 'auto', category = 'all', sortBy = 'volume', limit } = options;
@@ -25,7 +24,13 @@ export function useMarketsWithPolymarket(options: UseMarketsWithPolymarketOption
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [markets, setMarkets] = useState<(MockMarket | NexusMarketFromPolymarket)[]>([]);
-  const [dataSource, setDataSource] = useState<'mock' | 'polymarket'>('mock');
+  const [dataSource, setDataSource] = useState<'mock' | 'polymarket' | 'nexus'>('mock');
+
+  // TRPC fetch for Nexus markets
+  const nexusQuery = trpc.markets.nexus.useQuery(
+    { category, limit: limit || 50 },
+    { enabled: source === 'nexus' || source === 'auto' }
+  );
 
   /**
    * Fetch markets based on source
@@ -37,22 +42,63 @@ export function useMarketsWithPolymarket(options: UseMarketsWithPolymarketOption
 
       let fetchedMarkets: (MockMarket | NexusMarketFromPolymarket)[] = [];
 
-      if (source === 'polymarket' || source === 'auto') {
+      if (source === 'nexus') {
+        if (nexusQuery.data) {
+          fetchedMarkets = nexusQuery.data.map(m => ({
+            id: m.sourceId,
+            title: m.title,
+            description: m.description || '',
+            category: (m.category as any) || 'other',
+            endDate: new Date(m.endTime),
+            poolSize: parseFloat(m.yesPool || '0') + parseFloat(m.noPool || '0'),
+            yesOdds: parseInt(m.yesOdds || '50'),
+            noOdds: parseInt(m.noOdds || '50'),
+            volume24h: 1000, // Placeholder
+            participants: 100, // Placeholder
+            status: 'active',
+            icon: '📊',
+            source: 'polymarket' as any, // Reuse type for simplicity
+          }));
+          setDataSource('nexus');
+        }
+      } else if (source === 'polymarket' || source === 'auto') {
         try {
-          // Try to fetch from Polymarket
-          if (category === 'all') {
-            fetchedMarkets = await fetchTrendingMarketsFromPolymarket(limit || 10);
-          } else {
-            fetchedMarkets = await fetchPolymarketByCategory(
-              category as NexusMarketFromPolymarket['category'],
-              limit || 10
-            );
-          }
+          // 1. Try Nexus first if auto
+          if (source === 'auto' && nexusQuery.data && nexusQuery.data.length > 0) {
+            fetchedMarkets = nexusQuery.data.map(m => ({
+              id: m.sourceId,
+              title: m.title,
+              description: m.description || '',
+              category: (m.category as any) || 'other',
+              endDate: new Date(m.endTime),
+              poolSize: 10000, 
+              yesOdds: parseInt(m.yesOdds || '50'),
+              noOdds: parseInt(m.noOdds || '50'),
+              volume24h: 1000,
+              participants: 100,
+              status: 'active',
+              icon: '📊',
+              source: 'polymarket' as any,
+            }));
+            setDataSource('nexus');
+          } 
+          
+          // 2. If no Nexus markets or source is explicitly polymarket, try Polymarket
+          if (fetchedMarkets.length === 0) {
+            if (category === 'all') {
+              fetchedMarkets = await fetchTrendingMarketsFromPolymarket(limit || 10);
+            } else {
+              fetchedMarkets = await fetchPolymarketByCategory(
+                category as NexusMarketFromPolymarket['category'],
+                limit || 10
+              );
+            }
 
-          if (fetchedMarkets.length > 0) {
-            setDataSource('polymarket');
-          } else {
-            throw new Error('No markets returned from Polymarket');
+            if (fetchedMarkets.length > 0) {
+              setDataSource('polymarket');
+            } else {
+              throw new Error('No markets returned from Polymarket');
+            }
           }
         } catch (polymarketError) {
           console.warn('Polymarket fetch failed, falling back to mock data:', polymarketError);
@@ -112,14 +158,14 @@ export function useMarketsWithPolymarket(options: UseMarketsWithPolymarketOption
     } finally {
       setIsLoading(false);
     }
-  }, [source, category, sortBy, limit]);
+  }, [source, category, sortBy, limit, nexusQuery.data]);
 
   /**
    * Fetch markets on mount and when options change
    */
   useEffect(() => {
     fetchMarkets();
-  }, [fetchMarkets]);
+  }, [fetchMarkets, nexusQuery.isSuccess]);
 
   /**
    * Get market by ID
@@ -190,10 +236,10 @@ export function useMarketsWithPolymarket(options: UseMarketsWithPolymarketOption
     stats,
 
     // State
-    isLoading,
-    error,
+    isLoading: isLoading || nexusQuery.isLoading,
+    error: error || (nexusQuery.error ? 'Failed to fetch Nexus markets' : null),
     dataSource,
-    isLiveData: dataSource === 'polymarket',
+    isLiveData: dataSource === 'polymarket' || dataSource === 'nexus',
 
     // Actions
     retry,
@@ -201,15 +247,16 @@ export function useMarketsWithPolymarket(options: UseMarketsWithPolymarketOption
 }
 
 /**
- * Hook to get trending markets from Polymarket with fallback
+ * Hook to get trending markets from Polymarket/Nexus with fallback
  */
 export function useTrendingMarketsWithPolymarket(limit: number = 5) {
   return useMarketsWithPolymarket({ source: 'auto', limit, sortBy: 'volume' });
 }
 
 /**
- * Hook to get markets by category with Polymarket
+ * Hook to get markets by category with Polymarket/Nexus
  */
 export function useMarketsByCategoryWithPolymarket(category: MarketCategory) {
   return useMarketsWithPolymarket({ source: 'auto', category });
 }
+

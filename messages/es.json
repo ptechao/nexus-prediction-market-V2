@@ -19,6 +19,7 @@
     "markets": "Mercados",
     "leaderboard": "Tabla de Clasificación",
     "portfolio": "Mi Cartera",
+    "profile": "Perfil",
     "settings": "Configuración"
   },
   "markets": {
@@ -99,6 +100,10 @@
     "title": "Idioma",
     "english": "English",
     "chineseTraditional": "繁體中文",
+    "chineseSimplified": "简体中文",
+    "japanese": "日本語",
+    "korean": "한국어",
+    "thai": "ไทย",
     "spanish": "Español"
   },
   "errors": {
@@ -107,5 +112,28 @@
     "transactionFailed": "Transacción fallida",
     "networkError": "Error de red",
     "unknownError": "Error desconocido"
+  },
+  "home": {
+    "heroTitle1": "Próxima Generación",
+    "heroTitle2": "Mercado de Predicciones",
+    "heroSubtitle": "Opere en cualquier evento. Obtenga retornos reales. Experimente el poder de las predicciones descentralizadas con análisis de IA.",
+    "exploreMarkets": "Explorar Mercados",
+    "viewAll": "Ver Todo",
+    "trendingMarkets": "Mercados Tendencia",
+    "worldCupTitle": "Especiales Copa del Mundo 2026",
+    "worldCupSubtitle": "Análisis y predicciones de partidos impulsados por IA",
+    "seeAllMatches": "Ver Todos los Partidos",
+    "whyNexus": "¿Por qué elegir NEXUS?",
+    "instantSettlement": "Liquidación Instantánea",
+    "instantSettlementDesc": "Apuestas liquidadas instantáneamente en la cadena con verificación de oráculo transparente.",
+    "secureAudited": "Seguro y Auditado",
+    "secureAuditedDesc": "Contratos inteligentes auditados por firmas de seguridad líderes para máxima seguridad.",
+    "copyTrading": "Trading de Copia",
+    "copyTradingDesc": "Siga a los mejores traders y replique sus estrategias ganadoras automáticamente.",
+    "highLiquidity": "Alta Liquidez",
+    "highLiquidityDesc": "Libros de órdenes profundos y diferenciales ajustados para condiciones de trading óptimas.",
+    "readyTitle": "¿Listo para empezar a predecir?",
+    "readySubtitle": "Únase a miles de traders en NEXUS y comience a obtener retornos hoy.",
+    "startPredicting": "Empezar a Predecir"
   }
 }

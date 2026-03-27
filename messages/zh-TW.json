@@ -12,13 +12,17 @@
     "edit": "編輯",
     "back": "返回",
     "next": "下一步",
-    "previous": "上一步"
+    "previous": "上一步",
+    "on": "於",
+    "by": "按",
+    "balance": "餘額"
   },
   "navigation": {
     "home": "首頁",
     "markets": "市場",
     "leaderboard": "排行榜",
     "portfolio": "我的投資組合",
+    "profile": "個人資料",
     "settings": "設置"
   },
   "markets": {
@@ -39,7 +43,8 @@
     "bet": "下注",
     "betNow": "立即下注",
     "demoMode": "演示模式 - 下注已禁用",
-    "noMarkets": "未找到市場"
+    "noMarkets": "未找到市場",
+    "marketsByCategory": "按類別劃分的市場"
   },
   "leaderboard": {
     "title": "排行榜",
@@ -99,6 +104,10 @@
     "title": "語言",
     "english": "English",
     "chineseTraditional": "繁體中文",
+    "chineseSimplified": "简体中文",
+    "japanese": "日本語",
+    "korean": "한국어",
+    "thai": "ไทย",
     "spanish": "Español"
   },
   "errors": {
@@ -107,5 +116,34 @@
     "transactionFailed": "交易失敗",
     "networkError": "網絡錯誤",
     "unknownError": "發生未知錯誤"
+  },
+  "home": {
+    "heroTitle1": "下一代",
+    "heroTitle2": "預測市場",
+    "heroSubtitle": "交易任何事件。賺取真實回報。體驗基於 AI 分析的去中心化預測的力量。",
+    "exploreMarkets": "探索市場",
+    "viewAll": "查看所有",
+    "trendingMarkets": "熱門市場",
+    "worldCupTitle": "2026 世界盃專區",
+    "worldCupSubtitle": "AI 驅動的賽事分析與預測",
+    "seeAllMatches": "查看所有賽事",
+    "whyNexus": "為什麼選擇 NEXUS?",
+    "instantSettlement": "即時結算",
+    "instantSettlementDesc": "基於鏈上智能合約的即時結算，透明的預言機驗證。",
+    "secureAudited": "安全審計",
+    "secureAuditedDesc": "由領先安全公司審計的智能合約，確保最高安全性。",
+    "copyTrading": "跟單交易",
+    "copyTradingDesc": "跟隨頂級交易者，自動複製他們的獲勝策略。",
+    "highLiquidity": "高流動性",
+    "highLiquidityDesc": "深厚的訂單簿和極小的價差，提供最佳交易條件。",
+    "readyTitle": "準備好開始預測了嗎？",
+    "readySubtitle": "加入數千名交易者的行列，立即開始獲取回報。",
+    "startPredicting": "開始預測",
+    "totalVolume": "總交易量",
+    "traders": "交易者",
+    "activeMarkets": "活躍市場",
+    "hotMarkets": "熱門市場",
+    "live": "實時",
+    "offline": "離線"
   }
 }

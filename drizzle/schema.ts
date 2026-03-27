@@ -42,7 +42,7 @@ export type InsertUser = typeof users.$inferInsert;
 export const markets = mysqlTable("markets", {
   id: int("id").autoincrement().primaryKey(),
   sourceId: varchar("sourceId", { length: 255 }).notNull().unique(),
-  source: mysqlEnum("source", ["polymarket", "api-football", "world-cup"]).notNull(),
+  source: mysqlEnum("source", ["polymarket", "api-football", "world-cup", "kalshi", "predictit", "manifold"]).notNull(),
   title: text("title").notNull(),
   description: text("description"),
   category: varchar("category", { length: 255 }),

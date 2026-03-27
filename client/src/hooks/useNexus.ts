@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import { useAccount, useContractRead, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useQueryClient } from '@tanstack/react-query';
 import { parseUnits, formatUnits } from 'viem';
 import { CONTRACT_ADDRESSES } from '@/lib/web3Config';
 
@@ -178,6 +179,11 @@ export function useNexus(marketAddress?: string, vaultAddress?: string) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  const invalidateContractData = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['readContract'] });
+  }, [queryClient]);
 
   // ==================== Write Contract Hooks ====================
 

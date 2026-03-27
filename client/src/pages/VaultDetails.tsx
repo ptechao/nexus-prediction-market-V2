@@ -14,6 +14,9 @@ import {
   Calendar,
   Target,
 } from 'lucide-react';
+import { useLanguageContext } from '@/contexts/LanguageContext';
+import messages from '../../../messages';
+import { AITranslatedText } from '@/components/AITranslatedText';
 
 // Mock 數據 - 實際應該從區塊鏈獲取
 const mockVaultData = {
@@ -78,6 +81,8 @@ const mockFollowers = [
 ];
 
 export default function VaultDetails() {
+  const { language } = useLanguageContext();
+  const t = (messages as Record<string, any>)[language] || messages.en;
   const [, setLocation] = useLocation();
   const [selectedTab, setSelectedTab] = useState('overview');
 
@@ -108,7 +113,7 @@ export default function VaultDetails() {
           className="flex items-center gap-2 text-slate-600 hover:text-slate-900"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Leaderboard
+          {t.common.back || 'Back to Leaderboard'}
         </Button>
       </div>
 
@@ -129,13 +134,13 @@ export default function VaultDetails() {
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 bg-white border border-slate-200 rounded-lg p-1">
             <TabsTrigger value="overview" className="data-[state=active]:bg-blue-50">
-              Overview
+              {t.portfolio.overview || 'Overview'}
             </TabsTrigger>
             <TabsTrigger value="positions" className="data-[state=active]:bg-blue-50">
-              Positions
+              {t.portfolio.positions || 'Positions'}
             </TabsTrigger>
             <TabsTrigger value="followers" className="data-[state=active]:bg-blue-50">
-              Followers
+              {t.leaderboard.followers || 'Followers'}
             </TabsTrigger>
           </TabsList>
 
@@ -159,7 +164,7 @@ export default function VaultDetails() {
               {/* 勝率 */}
               <Card className="p-4 border-slate-200">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-slate-600">Win Rate</span>
+                  <span className="text-sm font-semibold text-slate-600">{t.leaderboard.winRate || 'Win Rate'}</span>
                   <Target className="w-4 h-4 text-blue-600" />
                 </div>
                 <div className="text-3xl font-bold text-blue-600">
@@ -241,10 +246,10 @@ export default function VaultDetails() {
                   <thead className="bg-slate-50 border-b border-slate-200">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase">
-                        Market
+                        {t.markets.title || 'Market'}
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase">
-                        Bet
+                        {t.markets.filterByCategory || 'Bet'}
                       </th>
                       <th className="px-6 py-3 text-right text-xs font-semibold text-slate-600 uppercase">
                         Amount
@@ -270,7 +275,7 @@ export default function VaultDetails() {
                         className="border-b border-slate-200 hover:bg-slate-50 transition-colors"
                       >
                         <td className="px-6 py-4 text-sm font-medium text-slate-900">
-                          {position.market}
+                          <AITranslatedText text={position.market} />
                         </td>
                         <td className="px-6 py-4 text-sm">
                           <Badge
@@ -375,7 +380,7 @@ export default function VaultDetails() {
       {/* 行動按鈕 */}
       <div className="mt-8 flex gap-4">
         <Button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
-          Copy This Trader
+          {t.leaderboard.copyTrade || 'Copy This Trader'}
         </Button>
         <Button variant="outline" className="flex-1">
           View on Blockchain

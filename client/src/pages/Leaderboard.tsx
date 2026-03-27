@@ -6,6 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Trophy, TrendingUp, Users, Target, Zap, CheckCircle, Eye } from 'lucide-react';
 import CopyTradingModal from '@/components/CopyTradingModal';
 import { toast } from 'sonner';
+import { useLanguageContext } from '@/contexts/LanguageContext';
+import messages from '../../../messages';
+import { AITranslatedText } from '@/components/AITranslatedText';
 
 interface Leader {
   id: number;
@@ -26,6 +29,8 @@ interface Leader {
 
 export default function Leaderboard() {
   const [, setLocation] = useLocation();
+  const { language } = useLanguageContext();
+  const t = (messages as Record<string, any>)[language] || messages.en;
   const [leaders, setLeaders] = useState<Leader[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<'roi' | 'winRate' | 'followers'>('roi');
@@ -144,11 +149,11 @@ export default function Leaderboard() {
           <div className="flex items-center gap-3 mb-2">
             <Trophy className="w-8 h-8 text-yellow-500" />
             <h1 className="text-4xl font-bold text-slate-900">
-              Top Traders
+              {t.leaderboard.title}
             </h1>
           </div>
           <p className="text-lg text-slate-600">
-            Follow the most successful traders and copy their strategies
+            {t.leaderboard.subtitle}
           </p>
         </div>
 
@@ -160,7 +165,7 @@ export default function Leaderboard() {
             className="flex items-center gap-2"
           >
             <TrendingUp className="w-4 h-4" />
-            Best ROI
+            {t.leaderboard.roi}
           </Button>
           <Button
             variant={sortBy === 'winRate' ? 'default' : 'outline'}
@@ -168,7 +173,7 @@ export default function Leaderboard() {
             className="flex items-center gap-2"
           >
             <Target className="w-4 h-4" />
-            Win Rate
+            {t.leaderboard.winRate}
           </Button>
           <Button
             variant={sortBy === 'followers' ? 'default' : 'outline'}
@@ -176,7 +181,7 @@ export default function Leaderboard() {
             className="flex items-center gap-2"
           >
             <Users className="w-4 h-4" />
-            Most Followed
+            {t.leaderboard.followers}
           </Button>
         </div>
 
@@ -192,6 +197,7 @@ export default function Leaderboard() {
             {sortedLeaders.map((leader, index) => (
               <Card
                 key={leader.id}
+                onClick={() => setLocation(`/vault/${leader.id}`)}
                 className={`overflow-hidden transition-all duration-300 cursor-pointer ${
                   isFollowing(leader.id)
                     ? 'hover:shadow-xl border-2 border-green-200 hover:border-green-400 bg-gradient-to-r from-green-50 to-transparent'
@@ -234,13 +240,15 @@ export default function Leaderboard() {
                             </span>
                             {isFollowing(leader.id) && (
                               <Badge className="bg-green-100 text-green-800 ml-auto md:ml-0">
-                                ✓ Following
+                                ✓ {t.leaderboard.following}
                               </Badge>
                             )}
                           </div>
-                          <p className="text-sm text-slate-600">
-                            {leader.description}
-                          </p>
+                          <AITranslatedText
+                            text={leader.description}
+                            as="p"
+                            className="text-sm text-slate-600"
+                          />
                         </div>
                       </div>
 
@@ -260,25 +268,25 @@ export default function Leaderboard() {
                     {/* Stats */}
                     <div className="grid grid-cols-4 gap-4 flex-shrink-0 md:gap-6">
                       <div className="text-center">
-                        <div className="text-xs text-slate-600 mb-1">ROI</div>
+                        <div className="text-xs text-slate-600 mb-1">{t.leaderboard.roi}</div>
                         <div className="text-2xl font-bold text-green-600">
                           +{leader.roi.toFixed(1)}%
                         </div>
                       </div>
                       <div className="text-center">
-                        <div className="text-xs text-slate-600 mb-1">Win Rate</div>
+                        <div className="text-xs text-slate-600 mb-1">{t.leaderboard.winRate}</div>
                         <div className="text-2xl font-bold text-blue-600">
                           {(leader.winRate * 100).toFixed(0)}%
                         </div>
                       </div>
                       <div className="text-center">
-                        <div className="text-xs text-slate-600 mb-1">Trades</div>
+                        <div className="text-xs text-slate-600 mb-1">{t.portfolio.positions}</div>
                         <div className="text-2xl font-bold text-slate-900">
                           {leader.totalTrades}
                         </div>
                       </div>
                       <div className="text-center">
-                        <div className="text-xs text-slate-600 mb-1">Followers</div>
+                        <div className="text-xs text-slate-600 mb-1">{t.leaderboard.followers}</div>
                         <div className="text-2xl font-bold text-slate-900">
                           {formatNumber(leader.followers)}
                         </div>
@@ -307,12 +315,12 @@ export default function Leaderboard() {
                         {isFollowing(leader.id) ? (
                           <>
                             <CheckCircle className="w-4 h-4" />
-                            <span>Following</span>
+                            <span>{t.leaderboard.following}</span>
                           </>
                         ) : (
                           <>
                             <Zap className="w-4 h-4" />
-                            <span>Copy Trade</span>
+                            <span>{t.leaderboard.copyTrade}</span>
                           </>
                         )}
                       </Button>

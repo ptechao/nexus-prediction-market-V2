@@ -1,24 +1,22 @@
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import type { Market } from '@/components/MarketCard';
 
-export interface SearchFilters {
-  query: string;
-  category?: string;
-  minOdds?: number;
-  maxOdds?: number;
-  minPool?: number;
-  maxPool?: number;
-  sortBy?: 'volume' | 'trending' | 'endDate' | 'participants';
-  sortOrder?: 'asc' | 'desc';
-}
+export function useMarketSearch(markets: Market[] = []) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [category, setCategory] = useState('all');
+  const [oddsRange, setOddsRange] = useState<[number, number]>([0, 100]);
+  const [poolSize, setPoolSize] = useState<[number, number]>([0, 10000000]);
+  const [sortBy, setSortBy] = useState<'volume' | 'trending' | 'endDate' | 'participants'>('volume');
+  const [sortOrder] = useState<'asc' | 'desc'>('desc');
 
-export function useMarketSearch(markets: Market[], filters: SearchFilters) {
-  return useMemo(() => {
-    let filtered = [...markets];
+  const filteredMarkets = useMemo(() => {
+    // Ensure markets is always an array
+    const safeMarkets = Array.isArray(markets) ? markets : [];
+    let filtered = [...safeMarkets];
 
     // Text search
-    if (filters.query) {
-      const query = filters.query.toLowerCase();
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
         (m) =>
           m.title.toLowerCase().includes(query) ||
@@ -28,30 +26,25 @@ export function useMarketSearch(markets: Market[], filters: SearchFilters) {
     }
 
     // Category filter
-    if (filters.category && filters.category !== 'all') {
-      filtered = filtered.filter((m) => m.category === filters.category);
+    if (category && category !== 'all') {
+      filtered = filtered.filter((m) => m.category === category);
     }
 
     // Odds range filter
-    if (filters.minOdds !== undefined) {
-      filtered = filtered.filter((m) => m.yesOdds >= filters.minOdds!);
-    }
-    if (filters.maxOdds !== undefined) {
-      filtered = filtered.filter((m) => m.yesOdds <= filters.maxOdds!);
+    if (oddsRange) {
+      filtered = filtered.filter(
+        (m) => m.yesOdds >= oddsRange[0] && m.yesOdds <= oddsRange[1]
+      );
     }
 
     // Pool size filter
-    if (filters.minPool !== undefined) {
-      filtered = filtered.filter((m) => m.totalPool >= filters.minPool!);
-    }
-    if (filters.maxPool !== undefined) {
-      filtered = filtered.filter((m) => m.totalPool <= filters.maxPool!);
+    if (poolSize) {
+      filtered = filtered.filter(
+        (m) => m.totalPool >= poolSize[0] && m.totalPool <= poolSize[1]
+      );
     }
 
     // Sorting
-    const sortBy = filters.sortBy || 'volume';
-    const sortOrder = filters.sortOrder || 'desc';
-
     filtered.sort((a, b) => {
       let aValue: number;
       let bValue: number;
@@ -82,5 +75,14 @@ export function useMarketSearch(markets: Market[], filters: SearchFilters) {
     });
 
     return filtered;
-  }, [markets, filters]);
+  }, [markets, searchQuery, category, oddsRange, poolSize, sortBy, sortOrder]);
+
+  return {
+    searchQuery, setSearchQuery,
+    category, setCategory,
+    oddsRange, setOddsRange,
+    poolSize, setPoolSize,
+    sortBy, setSortBy,
+    filteredMarkets,
+  };
 }

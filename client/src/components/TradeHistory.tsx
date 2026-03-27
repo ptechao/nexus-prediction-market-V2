@@ -4,12 +4,17 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TrendingUp, TrendingDown, Calendar, Filter, Download } from 'lucide-react';
 import type { PortfolioPosition } from '@/hooks/useUserPortfolio';
+import { useLanguageContext } from '@/contexts/LanguageContext';
+import messages from '../../../messages';
+import { AITranslatedText } from './AITranslatedText';
 
 interface TradeHistoryProps {
   positions: PortfolioPosition[];
 }
 
 export function TradeHistory({ positions }: TradeHistoryProps) {
+  const { language } = useLanguageContext();
+  const t = (messages as Record<string, any>)[language] || messages.en;
   const [filterSide, setFilterSide] = useState<'all' | 'yes' | 'no'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'pnl' | 'return'>('date');
 
@@ -94,14 +99,14 @@ export function TradeHistory({ positions }: TradeHistoryProps) {
       {/* Stats Summary */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card className="bg-slate-800/60 border-slate-700/50 p-4">
-          <div className="text-xs text-slate-400 uppercase mb-1">Total P&L</div>
+          <div className="text-xs text-slate-400 uppercase mb-1">{t.portfolio.totalGain}</div>
           <div className={`text-2xl font-bold ${stats.totalPnL >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
             {formatCurrency(stats.totalPnL)}
           </div>
         </Card>
 
         <Card className="bg-slate-800/60 border-slate-700/50 p-4">
-          <div className="text-xs text-slate-400 uppercase mb-1">Win Rate</div>
+          <div className="text-xs text-slate-400 uppercase mb-1">{t.leaderboard.winRate}</div>
           <div className="text-2xl font-bold text-cyan-400">{stats.winRate.toFixed(1)}%</div>
         </Card>
 
@@ -127,7 +132,7 @@ export function TradeHistory({ positions }: TradeHistoryProps) {
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
           <Filter className="w-4 h-4 text-slate-400" />
-          <span className="text-sm text-slate-400">Side:</span>
+          <span className="text-sm text-slate-400">{t.markets.filterByCategory}:</span>
           {(['all', 'yes', 'no'] as const).map((side) => (
             <Button
               key={side}
@@ -150,7 +155,7 @@ export function TradeHistory({ positions }: TradeHistoryProps) {
         </div>
 
         <div className="flex items-center gap-2 ml-auto">
-          <span className="text-sm text-slate-400">Sort by:</span>
+          <span className="text-sm text-slate-400">{t.common.ok || 'Sort'}:</span>
           {(['date', 'pnl', 'return'] as const).map((sort) => (
             <Button
               key={sort}
@@ -159,7 +164,7 @@ export function TradeHistory({ positions }: TradeHistoryProps) {
               size="sm"
               className={sortBy === sort ? 'bg-cyan-600 hover:bg-cyan-500' : 'bg-slate-800/60 border-slate-700/50'}
             >
-              {sort === 'date' ? 'Date' : sort === 'pnl' ? 'P&L' : 'Return'}
+              {sort === 'date' ? t.markets.endDate : sort === 'pnl' ? t.portfolio.totalGain : t.portfolio.gainPercent}
             </Button>
           ))}
         </div>
@@ -179,7 +184,7 @@ export function TradeHistory({ positions }: TradeHistoryProps) {
       <div className="space-y-3">
         {filteredAndSorted.length === 0 ? (
           <Card className="bg-slate-800/60 border-slate-700/50 p-8 text-center">
-            <p className="text-slate-400">No trades found</p>
+            <p className="text-slate-400">{t.portfolio.noHistory}</p>
           </Card>
         ) : (
           filteredAndSorted.map((position) => (
@@ -197,7 +202,7 @@ export function TradeHistory({ positions }: TradeHistoryProps) {
                       <TrendingDown className="w-5 h-5 text-red-400" />
                     )}
                     <div className="flex-1">
-                      <h4 className="text-sm font-semibold text-white truncate">{position.marketTitle}</h4>
+                      <AITranslatedText text={position.marketTitle} as="h4" className="text-sm font-semibold text-white truncate" />
                       <p className="text-xs text-slate-500 flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
                         {formatDate(position.timestamp)}
