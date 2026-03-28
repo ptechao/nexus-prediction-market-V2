@@ -11,8 +11,9 @@ if (!connectionString) {
 export default defineConfig({
   schema: "./drizzle/schema.ts",
   out: "./drizzle",
-  dialect: "sqlite",
+  dialect: "turso",
   dbCredentials: {
-    url: "file:" + (connectionString.startsWith("file:") ? connectionString.slice(5) : connectionString),
+    url: connectionString,
+    authToken: process.env.DATABASE_AUTH_TOKEN,
   },
 });

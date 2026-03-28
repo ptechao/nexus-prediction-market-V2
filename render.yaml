@@ -3,7 +3,7 @@ services:
     name: nexus-prediction-market
     env: node
     plan: free # Can be 'starter' for more power
-    buildCommand: pnpm install && pnpm build
+    buildCommand: pnpm install && pnpm build && pnpm drizzle-kit push
     startCommand: pnpm start
     envVars:
       - key: NODE_ENV
