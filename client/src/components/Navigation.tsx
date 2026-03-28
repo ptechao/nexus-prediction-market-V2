@@ -90,12 +90,12 @@ export function Navigation() {
           {/* Wallet Connection & Language Switcher & Notifications */}
           <div className="flex items-center gap-2 md:gap-3 flex-shrink-0 whitespace-nowrap">
             {isConnected && balance && (
-              <div className="hidden lg:flex flex-col items-end px-3 py-1 bg-slate-800/50 rounded-lg border border-slate-700/50">
+              <Link href="/portfolio" className="hidden lg:flex flex-col items-end px-3 py-1 bg-slate-800/50 rounded-lg border border-slate-700/50 hover:bg-slate-700/50 transition-colors">
                 <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{t.common.balance || 'Balance'}</span>
                 <span className="text-xs font-mono text-cyan-400">
                   {Number(balance.formatted).toFixed(4)} {balance.symbol}
                 </span>
-              </div>
+              </Link>
             )}
             <NotificationCenter />
             <LanguageSwitcher />

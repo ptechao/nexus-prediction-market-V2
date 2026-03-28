@@ -7,6 +7,7 @@ import { useAccount } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useLanguageContext } from '@/contexts/LanguageContext';
 import messages from '../../../messages';
+import { AITranslatedText } from '@/components/AITranslatedText';
 
 export default function Portfolio() {
   const { address, isConnected } = useAccount();
@@ -27,10 +28,8 @@ export default function Portfolio() {
         <div className="p-6 rounded-full bg-secondary/50 mb-6">
           <Wallet className="w-12 h-12 text-muted-foreground" />
         </div>
-        <h2 className="text-2xl font-bold text-foreground mb-2">{t.errors.walletNotConnected || 'Wallet Not Connected'}</h2>
-        <p className="text-muted-foreground mb-8 text-center max-w-md">
-          {t.portfolio.subtitle || 'Connect your wallet to view your positions and trade history.'}
-        </p>
+        <AITranslatedText as="h2" className="text-2xl font-bold text-foreground mb-2" text={t.errors.walletNotConnected || 'Wallet Not Connected'} />
+        <AITranslatedText as="p" className="text-muted-foreground mb-8 text-center max-w-md" text={t.portfolio.subtitle || 'Connect your wallet to view your positions and trade history.'} />
         <ConnectButton />
       </div>
     );
@@ -58,7 +57,7 @@ export default function Portfolio() {
               {loading ? '...' : formatCurrency(portfolio?.totalValue || 0)}
             </div>
             <div className="mt-2 text-xs text-muted-foreground">
-              Across {portfolio?.positions.length || 0} active positions
+              <AITranslatedText text="Across" /> {portfolio?.positions.length || 0} <AITranslatedText text="active positions" />
             </div>
           </Card>
 
@@ -89,7 +88,7 @@ export default function Portfolio() {
               {loading ? '...' : `${((portfolio?.winRate || 0) * 100).toFixed(1)}%`}
             </div>
             <div className="mt-2 text-xs text-muted-foreground">
-              Based on {portfolio?.totalTrades || 0} total trades
+              <AITranslatedText text="Based on" /> {portfolio?.totalTrades || 0} <AITranslatedText text="total trades" />
             </div>
           </Card>
 
@@ -104,7 +103,7 @@ export default function Portfolio() {
               {loading ? '...' : formatCurrency(portfolio?.totalInvested || 0)}
             </div>
             <div className="mt-2 text-xs text-muted-foreground">
-              Cumulative investment volume
+              <AITranslatedText text="Cumulative investment volume" />
             </div>
           </Card>
         </div>
@@ -114,7 +113,7 @@ export default function Portfolio() {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-foreground">{t.portfolio.history}</h2>
             <Button variant="outline" className="text-primary border-primary/20 hover:bg-primary/5 transition-colors">
-              Refresh Data <History className="w-4 h-4 ml-2" />
+              <AITranslatedText text="Refresh Data" /> <History className="w-4 h-4 ml-2" />
             </Button>
           </div>
           <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">

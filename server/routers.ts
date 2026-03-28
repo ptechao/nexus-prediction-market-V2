@@ -80,8 +80,8 @@ export const appRouter = router({
       .query(async ({ input }) => {
         try {
           const { getDb } = await import("./db");
-          const { markets } = await import("../drizzle/schema");
-          const { desc, eq } = await import("drizzle-orm");
+          const { markets, orders } = await import("../drizzle/schema");
+          const { desc, eq, inArray } = await import("drizzle-orm");
           
           const db = await getDb();
           if (!db) {
@@ -95,12 +95,79 @@ export const appRouter = router({
           let query = db.select().from(markets);
           
           if (category && category !== 'all') {
-            // Use like-based or multi-mapping filtering instead of strict eq
-            // However, to ensure maximum reliability and flexibility, 
-            // we'll fetch all and filter in frontend for rich category logic
+            const { or, sql } = await import("drizzle-orm");
+            // Standardize categories for matching
+            const categoryMatch = category.toLowerCase();
+            
+            if (categoryMatch === 'other') {
+              // 'other' includes 'General' and anything not in the main categories
+              query = query.where(
+                or(
+                  sql`LOWER(${markets.category}) = 'other'`,
+                  sql`LOWER(${markets.category}) = 'general'`,
+                  sql`LOWER(${markets.category}) = 'culture'`,
+                  sql`LOWER(${markets.category}) = 'economy'`,
+                  sql`LOWER(${markets.category}) NOT IN ('politics', 'crypto', 'sports', 'entertainment', 'nba', 'basketball', 'soccer', 'football', 'bitcoin', 'ethereum', 'world cup')`
+                )
+              );
+            } else if (categoryMatch === 'sports') {
+              query = query.where(
+                or(
+                  sql`LOWER(${markets.category}) = 'sports'`,
+                  sql`LOWER(${markets.category}) = 'soccer'`,
+                  sql`LOWER(${markets.category}) = 'football'`,
+                  sql`LOWER(${markets.category}) = 'nba'`,
+                  sql`LOWER(${markets.category}) = 'basketball'`
+                )
+              );
+            } else if (categoryMatch === 'crypto') {
+              query = query.where(
+                or(
+                  sql`LOWER(${markets.category}) = 'crypto'`,
+                  sql`LOWER(${markets.category}) = 'bitcoin'`,
+                  sql`LOWER(${markets.category}) = 'ethereum'`,
+                  sql`LOWER(${markets.category}) = 'blockchain'`
+                )
+              );
+            } else if (categoryMatch === 'world cup') {
+              query = query.where(
+                or(
+                  sql`LOWER(${markets.category}) = 'world cup'`,
+                  sql`LOWER(${markets.category}) LIKE '%world cup%'`
+                )
+              );
+            } else {
+              query = query.where(sql`LOWER(${markets.category}) = ${categoryMatch}`);
+            }
           }
 
-          return await query.orderBy(desc(markets.createdAt)).limit(limit);
+          const results = await query.orderBy(desc(markets.createdAt)).limit(limit);
+          const marketIds = results.map(m => m.id);
+          
+          // Fetch all open orders for these markets in one query
+          let allOrders: any[] = [];
+          if (marketIds.length > 0) {
+            allOrders = await db.select().from(orders).where(inArray(orders.marketId, marketIds));
+          }
+          
+          return results.map(m => ({
+            id: m.id,
+            sourceId: m.sourceId,
+            source: m.source,
+            title: m.title,
+            description: m.description,
+            category: m.category,
+            endDate: m.endTime, 
+            yesOdds: m.yesOdds || 50,
+            noOdds: m.noOdds || 50,
+            totalPool: m.totalPool || 0,
+            volume24h: m.volume24h || 0,
+            participants: m.participants || 0,
+            isTrending: m.isTrending || false,
+            image: m.image,
+            address: m.contractAddress,
+            orders: allOrders.filter(o => o.marketId === m.id)
+          }));
         } catch (error) {
           console.error("[TRPC markets.nexus] Failure:", error);
           return [];
@@ -157,9 +224,9 @@ export const appRouter = router({
             endDate: m.endTime,
             yesOdds: m.yesOdds || 50,
             noOdds: m.noOdds || 50,
-            totalPool: 1000,
-            volume24h: 100,
-            participants: 10,
+            totalPool: m.totalPool || 1000,
+            volume24h: m.volume24h || 100,
+            participants: m.participants || 10,
             isTrending: false,
             image: m.image
           }));
@@ -179,6 +246,32 @@ export const appRouter = router({
         } catch (error) {
           console.error("Manual sync failed:", error);
           throw new Error(error instanceof Error ? error.message : "Sync failed");
+        }
+      }),
+
+    /** Fetch historical price data for a market */
+    priceHistory: publicProcedure
+      .input(z.object({ marketId: z.string(), limit: z.number().default(100) }))
+      .query(async ({ input }) => {
+        try {
+          const { getDb } = await import("./db");
+          const { marketPriceHistory } = await import("../drizzle/schema");
+          const { eq, desc } = await import("drizzle-orm");
+          
+          const db = await getDb();
+          if (!db) return [];
+
+          const results = await db
+            .select()
+            .from(marketPriceHistory)
+            .where(eq(marketPriceHistory.marketId, input.marketId))
+            .orderBy(desc(marketPriceHistory.timestamp))
+            .limit(input.limit);
+            
+          return results.reverse();
+        } catch (error) {
+          console.error("[TRPC markets.priceHistory] Failure:", error);
+          return [];
         }
       }),
   }),

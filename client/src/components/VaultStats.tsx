@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { TrendingUp, Users, DollarSign, Zap, Target } from 'lucide-react';
 import { useLanguageContext } from '@/contexts/LanguageContext';
 import messages from '../../../messages';
+import { AITranslatedText } from '@/components/AITranslatedText';
 
 interface VaultStatsProps {
   totalAssets: number;
@@ -64,11 +65,11 @@ export default function VaultStats({
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-2xl font-bold text-slate-900">
-                {leaderName}'s {t.portfolio.wallet || 'Vault'}
+                {leaderName}'s <AITranslatedText text={t.portfolio.wallet || 'Vault'} />
               </h2>
-              <p className="text-sm text-slate-600 mt-1">
-                {t.leaderboard.subtitle || 'Pooled Copy Trading Fund'}
-              </p>
+              <div className="text-sm text-slate-600 mt-1">
+                <AITranslatedText text={t.leaderboard.subtitle || 'Pooled Copy Trading Fund'} />
+              </div>
             </div>
             <div className="flex gap-2">
               {isLocked && (
@@ -80,7 +81,7 @@ export default function VaultStats({
               {stats.isAboveHighWaterMark && (
                 <Badge className="bg-green-100 text-green-800 flex items-center gap-1">
                   <TrendingUp className="w-3 h-3" />
-                  Above HWM
+                  <AITranslatedText text="Above HWM" />
                 </Badge>
               )}
             </div>
@@ -92,50 +93,42 @@ export default function VaultStats({
             <div className="bg-white rounded-lg p-4 border border-slate-200">
               <div className="flex items-center gap-2 mb-2">
                 <DollarSign className="w-4 h-4 text-blue-600" />
-                <span className="text-xs font-semibold text-slate-600 uppercase">
-                  {t.portfolio.totalGain || 'Total Assets'}
-                </span>
+                <AITranslatedText as="span" className="text-xs font-semibold text-slate-600 uppercase" text={t.portfolio.totalGain || 'Total Assets'} />
               </div>
               <div className="text-2xl font-bold text-slate-900">
                 ${stats.formattedAssets}
               </div>
-              <p className="text-xs text-slate-500 mt-1">
-                {totalShares.toLocaleString()} shares
-              </p>
+              <div className="text-xs text-slate-500 mt-1">
+                {totalShares.toLocaleString()} <AITranslatedText text="shares" />
+              </div>
             </div>
 
             {/* 每份額淨值 (NAV) */}
             <div className="bg-white rounded-lg p-4 border border-slate-200">
               <div className="flex items-center gap-2 mb-2">
                 <Target className="w-4 h-4 text-purple-600" />
-                <span className="text-xs font-semibold text-slate-600 uppercase">
-                  NAV per Share
-                </span>
+                <AITranslatedText as="span" className="text-xs font-semibold text-slate-600 uppercase" text="NAV per Share" />
               </div>
               <div className="text-2xl font-bold text-slate-900">
                 ${stats.formattedNav}
               </div>
-              <p className={`text-xs mt-1 font-semibold ${
+              <div className={`text-xs mt-1 font-semibold ${
                 stats.isAboveHighWaterMark ? 'text-green-600' : 'text-slate-500'
               }`}>
-                {stats.isAboveHighWaterMark ? '+' : ''}{stats.navChangePercent.toFixed(2)}% vs HWM
-              </p>
+                {stats.isAboveHighWaterMark ? '+' : ''}{stats.navChangePercent.toFixed(2)}% <AITranslatedText text="vs HWM" />
+              </div>
             </div>
 
             {/* 高水位標記 */}
             <div className="bg-white rounded-lg p-4 border border-slate-200">
               <div className="flex items-center gap-2 mb-2">
                 <TrendingUp className="w-4 h-4 text-amber-600" />
-                <span className="text-xs font-semibold text-slate-600 uppercase">
-                  High Watermark
-                </span>
+                <AITranslatedText as="span" className="text-xs font-semibold text-slate-600 uppercase" text="High Watermark" />
               </div>
               <div className="text-2xl font-bold text-slate-900">
                 ${stats.formattedHwm}
               </div>
-              <p className="text-xs text-slate-500 mt-1">
-                Peak NAV
-              </p>
+              <AITranslatedText as="p" className="text-xs text-slate-500 mt-1" text="Peak NAV" />
             </div>
 
             {/* 績效費 */}
@@ -149,9 +142,9 @@ export default function VaultStats({
               <div className="text-2xl font-bold text-orange-600">
                 ${stats.formattedFee}
               </div>
-              <p className="text-xs text-slate-500 mt-1">
-                20% of profits
-              </p>
+              <div className="text-xs text-slate-500 mt-1">
+                <AITranslatedText text="20% of profits" />
+              </div>
             </div>
           </div>
         </div>
@@ -164,7 +157,7 @@ export default function VaultStats({
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-slate-900 flex items-center gap-2">
               <Zap className="w-4 h-4 text-orange-600" />
-              Active Positions
+              <AITranslatedText text="Active Positions" />
             </h3>
             <Badge variant="outline" className="bg-orange-50">
               {activePositions}
@@ -172,15 +165,15 @@ export default function VaultStats({
           </div>
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-slate-600">Status</span>
+              <AITranslatedText as="span" className="text-slate-600" text="Status" />
               <span className="font-semibold text-slate-900">
-                {isLocked ? 'Locked' : 'Unlocked'}
+                {isLocked ? <AITranslatedText text="Locked" /> : <AITranslatedText text="Unlocked" />}
               </span>
             </div>
             <div className="text-xs text-slate-500">
               {isLocked
-                ? 'Vault is locked while positions are active'
-                : 'Vault is unlocked - ready for new deposits'}
+                ? <AITranslatedText text="Vault is locked while positions are active" />
+                : <AITranslatedText text="Vault is unlocked - ready for new deposits" />}
             </div>
           </div>
         </Card>
@@ -190,7 +183,7 @@ export default function VaultStats({
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-slate-900 flex items-center gap-2">
               <DollarSign className="w-4 h-4 text-green-600" />
-              Fee Structure
+              <AITranslatedText text="Fee Structure" />
             </h3>
             <Badge variant="outline" className="bg-green-50">
               20%
@@ -198,12 +191,10 @@ export default function VaultStats({
           </div>
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-slate-600">Performance Fee</span>
-              <span className="font-semibold text-slate-900">20% of profits</span>
+              <AITranslatedText as="span" className="text-slate-600" text="Performance Fee" />
+              <AITranslatedText as="span" className="font-semibold text-slate-900" text="20% of profits" />
             </div>
-            <div className="text-xs text-slate-500">
-              Only charged when NAV exceeds high watermark
-            </div>
+            <AITranslatedText as="div" className="text-xs text-slate-500" text="Only charged when NAV exceeds high watermark" />
           </div>
         </Card>
       </div>
@@ -217,12 +208,12 @@ export default function VaultStats({
             </div>
           </div>
           <div className="text-sm text-blue-900">
-            <p className="font-semibold mb-1">{t.common.ok || 'How it works'}</p>
+            <AITranslatedText as="p" className="font-semibold mb-1" text={t.common.ok || 'How it works'} />
             <ul className="space-y-1 text-xs text-blue-800">
-              <li>• Your deposit is converted to vault shares</li>
-              <li>• Leader's bets are placed with pooled funds</li>
-              <li>• Profits are shared proportionally to your shares</li>
-              <li>• Leader earns 20% of profits as performance fee</li>
+              <li>• <AITranslatedText text="Your deposit is converted to vault shares" /></li>
+              <li>• <AITranslatedText text="Leader's bets are placed with pooled funds" /></li>
+              <li>• <AITranslatedText text="Profits are shared proportionally to your shares" /></li>
+              <li>• <AITranslatedText text="Leader earns 20% of profits as performance fee" /></li>
             </ul>
           </div>
         </div>

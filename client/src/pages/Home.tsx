@@ -9,10 +9,14 @@ import {
   Droplets,
   Wifi,
   WifiOff,
+  TrendingUp,
+  BarChart3,
+  Users,
 } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { MarketCard, MarketCardSkeleton, formatPool, type Market } from '@/components/MarketCard';
 import { useTranslation } from '@/hooks/useTranslation';
+import { AITranslatedText } from '@/components/AITranslatedText';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from '@/components/ui/carousel';
 import Autoplay from 'embla-carousel-autoplay';
 import { useRef, useState, useEffect, useMemo } from 'react';
@@ -120,23 +124,23 @@ export default function Home() {
     return [
       {
         id: 1,
-        title: s1Title.startsWith('home.') ? 'Predict the Future' : s1Title,
-        highlight: s1Highlight.startsWith('home.') ? 'Trade with Confidence' : s1Highlight,
-        desc: s1Desc.startsWith('home.') ? 'Join NEXUS — the decentralized prediction market platform. Experience the power of decentralized predictions with AI-driven insights.' : s1Desc,
+        title: 'Predict the Future',
+        highlight: 'Trade with Confidence',
+        desc: 'Join NEXUS — the decentralized prediction market platform. Experience the power of decentralized predictions with AI-driven insights.',
         image: 'https://images.unsplash.com/photo-1640340434855-6084b1f4901c?q=80&w=1920&auto=format&fit=crop',
       },
       {
         id: 2,
-        title: s2Title.startsWith('home.') ? 'Global Elections & Politics' : s2Title,
-        highlight: s2Highlight.startsWith('home.') ? 'Who will lead?' : s2Highlight,
-        desc: s2Desc.startsWith('home.') ? 'Trade on political outcomes with the deepest liquidity and instant on-chain settlement guarantees.' : s2Desc,
+        title: 'Global Elections & Politics',
+        highlight: 'Who will lead?',
+        desc: 'Trade on political outcomes with the deepest liquidity and instant on-chain settlement guarantees.',
         image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?q=80&w=1920&auto=format&fit=crop',
       },
       {
         id: 3,
-        title: s3Title.startsWith('home.') ? 'Major League Sports' : s3Title,
-        highlight: s3Highlight.startsWith('home.') ? 'Back your teams' : s3Highlight,
-        desc: s3Desc.startsWith('home.') ? 'Sports predictions powered by our proprietary AI model. Get the edge before the whistle blows.' : s3Desc,
+        title: 'Major League Sports',
+        highlight: 'Back your teams',
+        desc: 'Sports predictions powered by our proprietary AI model. Get the edge before the whistle blows.',
         image: 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=1920&auto=format&fit=crop',
       }
     ];
@@ -159,32 +163,30 @@ export default function Home() {
           <CarouselContent>
             {HERO_SLIDES.map((slide) => (
               <CarouselItem key={slide.id}>
-                <div className="relative w-full h-[450px] sm:h-[500px] lg:h-[600px] flex items-center justify-center">
-                  {/* Background Image with Overlay */}
+                <div className="relative w-full h-[280px] sm:h-[340px] lg:h-[400px] flex items-center justify-center">
                   <div 
-                    className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat transition-transform duration-10000 hover:scale-105"
+                    className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat transition-transform duration-[20s] hover:scale-110"
                     style={{ backgroundImage: `url('${slide.image}')` }}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/40" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/75 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                   </div>
 
-                  {/* Slide Content */}
-                  <div className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center md:text-left flex flex-col justify-center translate-y-4">
-                    <h1 className="text-3xl sm:text-5xl lg:text-7xl font-extrabold tracking-tight leading-tight mb-4 sm:mb-6 text-white drop-shadow-lg">
-                      {slide.title}{' '}
-                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 whitespace-nowrap block md:inline mt-2 md:mt-0">
-                        {slide.highlight}
-                      </span>
+                  <div className="relative z-10 w-full max-w-7xl mx-auto px-6 lg:px-12 text-left py-6 sm:py-0">
+                    <h1 className="text-3xl sm:text-5xl lg:text-7xl font-extrabold tracking-tight leading-[1.1] mb-4 text-white drop-shadow-2xl">
+                        <AITranslatedText text={slide.title} />
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 block mt-2">
+                             <AITranslatedText text={slide.highlight} />
+                        </span>
                     </h1>
-                    <p className="text-base sm:text-lg lg:text-xl text-slate-300 max-w-2xl mx-auto md:mx-0 mb-8 sm:mb-10 drop-shadow-md font-medium leading-relaxed">
-                      {slide.desc}
-                    </p>
+                    <div className="text-sm sm:text-lg lg:text-xl text-slate-300 max-w-2xl mb-8 drop-shadow-xl font-medium leading-relaxed opacity-90">
+                        <AITranslatedText text={slide.desc} />
+                    </div>
                     
                     <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
                       <Link href="/markets">
                         <Button size="lg" className="w-full sm:w-auto bg-cyan-500 hover:bg-cyan-400 text-black font-bold border-none shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all">
-                          {t('home.startPredicting') || 'Explore Markets'}
+                          <AITranslatedText text={t('home.startPredicting') || 'Explore Markets'} />
                           <ArrowRight className="w-5 h-5 ml-2" />
                         </Button>
                       </Link>
@@ -202,14 +204,14 @@ export default function Home() {
           </div>
 
           {/* Pagination Dots */}
-          <div className="absolute bottom-24 left-0 right-0 z-30 flex justify-center gap-2 pointer-events-none">
+          <div className="absolute bottom-16 sm:bottom-20 left-0 right-0 z-30 flex justify-center gap-2 pointer-events-none">
             {Array.from({ length: count }).map((_, index) => (
               <button
                 key={index}
                 className={cn(
-                  "w-2 h-2 rounded-full transition-all duration-300 pointer-events-auto",
+                  "w-1.5 h-1.5 rounded-full transition-all duration-300 pointer-events-auto",
                   current === index 
-                    ? "bg-cyan-400 w-8" 
+                    ? "bg-cyan-400 w-6" 
                     : "bg-white/30 hover:bg-white/50"
                 )}
                 onClick={() => api?.scrollTo(index)}
@@ -270,7 +272,7 @@ export default function Home() {
               href="/markets"
               className="inline-flex items-center gap-1 text-primary hover:text-primary/80 font-medium transition-colors"
             >
-              View All
+              <AITranslatedText text="View All" />
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -297,19 +299,70 @@ export default function Home() {
                 <Zap className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-foreground">{t('home.worldCupTitle') || 'Sports Specials'}</h2>
-                <p className="text-sm text-muted-foreground">{t('home.worldCupSubtitle') || 'AI-powered match analysis & predictions'}</p>
+                <h2 className="text-2xl font-bold text-foreground">
+                  <AITranslatedText text={t('home.worldCupTitle') || 'Sports Specials'} />
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  <AITranslatedText text={t('home.worldCupSubtitle') || 'AI-powered match analysis & predictions'} />
+                </p>
               </div>
             </div>
             <Link
               href="/markets?category=World%20Cup%20%E2%98%85"
               className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
             >
-              {t('home.seeAllMatches') || 'See All Matches'}
+              <AITranslatedText text={t('home.seeAllMatches') || 'See All Matches'} />
             </Link>
           </div>
 
           <WorldCupPreview />
+        </div>
+      </section>
+
+      {/* ── New Ecosystem Features Showcase ── */}
+      <section className="px-4 sm:px-6 lg:px-8 pb-16">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* KOL / Affiliate Card */}
+            <div className="relative overflow-hidden group rounded-2xl bg-gradient-to-br from-indigo-900/40 via-slate-900 to-slate-900 border border-indigo-500/20 p-6 sm:p-8 flex flex-col items-center text-center">
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <Users className="w-24 h-24 text-indigo-400 -rotate-12" />
+                </div>
+                <div className="bg-indigo-500/10 p-4 rounded-full mb-6">
+                    <Flame className="w-8 h-8 text-orange-400" />
+                </div>
+                <h3 className="text-xl sm:text-2xl font-bold text-white mb-3">
+                    <AITranslatedText text="Share & Earn 50% Fees" />
+                </h3>
+                <div className="text-slate-400 text-sm mb-8 max-w-sm leading-relaxed">
+                    <AITranslatedText text="Join our KOL ecosystem. Invite your community and earn 50% of the protocol revenue from every trade they make." />
+                </div>
+                <Link href="/profile">
+                    <Button className="bg-indigo-600 hover:bg-indigo-500 text-white border-0 px-8 py-5 rounded-xl font-bold shadow-lg shadow-indigo-600/20 transition-all active:scale-95">
+                        <AITranslatedText text="Get Your KOL Link" />
+                    </Button>
+                </Link>
+            </div>
+
+            {/* Order Book / Limit Trade Card */}
+            <div className="relative overflow-hidden group rounded-2xl bg-gradient-to-br from-cyan-900/30 via-slate-900 to-slate-900 border border-cyan-500/20 p-6 sm:p-8 flex flex-col items-center text-center">
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <BarChart3 className="w-24 h-24 text-cyan-400 rotate-12" />
+                </div>
+                <div className="bg-cyan-500/10 p-4 rounded-full mb-6">
+                    <TrendingUp className="w-8 h-8 text-cyan-400" />
+                </div>
+                <h3 className="text-xl sm:text-2xl font-bold text-white mb-3">
+                    <AITranslatedText text="Professional Order Book" />
+                </h3>
+                <div className="text-slate-400 text-sm mb-8 max-w-sm leading-relaxed">
+                    <AITranslatedText text="Trade like a pro with our Limit Order Engine. Set your own prices, view market depth, and execute with precision." />
+                </div>
+                <Link href="/markets">
+                    <Button className="bg-cyan-600 hover:bg-cyan-500 text-white border-0 px-8 py-5 rounded-xl font-bold shadow-lg shadow-cyan-600/20 transition-all active:scale-95">
+                        <AITranslatedText text="Try Limit Trading" />
+                    </Button>
+                </Link>
+            </div>
         </div>
       </section>
 
@@ -328,22 +381,22 @@ export default function Home() {
                 color: 'text-amber-500',
               },
               {
+                icon: Users,
+                title: 'KOL Profit Sharing',
+                desc: 'Earn passive income by sharing markets. Get 50% of fees from your referrals permanently.',
+                color: 'text-indigo-500',
+              },
+              {
+                icon: BarChart3,
+                title: 'Limit Order Engine',
+                desc: 'Stock-like trading experience with deep order books and slippage protection.',
+                color: 'text-cyan-500',
+              },
+              {
                 icon: Shield,
                 title: t('home.secureAudited') || 'Secure & Audited',
                 desc: t('home.secureAuditedDesc') || 'Smart contracts audited by leading security firms for maximum safety.',
                 color: 'text-emerald-500',
-              },
-              {
-                icon: Copy,
-                title: t('home.copyTrading') || 'Copy Trading',
-                desc: t('home.copyTradingDesc') || 'Follow top traders and replicate their winning strategies automatically.',
-                color: 'text-blue-500',
-              },
-              {
-                icon: Droplets,
-                title: t('home.highLiquidity') || 'High Liquidity',
-                desc: t('home.highLiquidityDesc') || 'Deep order books and tight spreads for optimal trading conditions.',
-                color: 'text-indigo-500',
               },
             ].map((feature) => (
               <div
@@ -352,11 +405,11 @@ export default function Home() {
               >
                 <feature.icon className={`w-8 h-8 ${feature.color} mb-4`} />
                 <h3 className="text-lg font-semibold text-foreground mb-2">
-                  {feature.title}
+                  <AITranslatedText text={feature.title} />
                 </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {feature.desc}
-                </p>
+                <div className="text-sm text-muted-foreground leading-relaxed">
+                  <AITranslatedText text={feature.desc} />
+                </div>
               </div>
             ))}
           </div>
@@ -374,7 +427,7 @@ export default function Home() {
           </p>
           <Link href="/markets" className="inline-block">
             <Button size="lg" className="bg-background text-foreground hover:bg-background/90 font-semibold px-8 text-lg border border-border/20 shadow-sm">
-              {t('home.startPredicting') || 'Explore All Markets'}
+              <AITranslatedText text={t('home.startPredicting') || 'Explore All Markets'} />
             </Button>
           </Link>
         </div>

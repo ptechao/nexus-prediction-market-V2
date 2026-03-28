@@ -2,22 +2,18 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
  * @title BinaryMarket
- * @dev A binary (Yes/No) prediction market contract with fee mechanism and emergency cancel
- * 
- * Features:
- * - Users can bet on Yes or No outcomes
- * - Market owner can resolve the outcome (simple oracle for MVP)
- * - Emergency cancel functionality with refund mechanism
- * - Protocol fee deducted from winnings (configurable basis points)
- * - Correct payout calculation: payout = (userBet * totalPool) / winningPool
- * - Edge case handling: if winning pool is 0, all losers get refunded
+ * @dev A tokenized binary prediction market with AMM-based secondary trading.
+ * - Positions are ERC-1155 tokens (ID 1: YES, ID 2: NO)
+ * - Supports early sell-back based on current pool ratio (AMM)
+ * - Supports KOL referrals for fee sharing
  */
-contract BinaryMarket is Ownable, ReentrancyGuard {
+contract BinaryMarket is ERC1155, Ownable, ReentrancyGuard {
     // ============ State Variables ============
     
     IERC20 public usdc;
@@ -40,11 +36,32 @@ contract BinaryMarket is Ownable, ReentrancyGuard {
     uint256 public yesPoolAmount;
     uint256 public noPoolAmount;
     
-    // Mapping of user address to their bets
-    mapping(address => uint256) public yesBets;
-    mapping(address => uint256) public noBets;
-    mapping(address => bool) public hasClaimed;
-    mapping(address => bool) public hasClaimedRefund;
+    // Token IDs
+    uint256 public constant YES_TOKEN_ID = 1;
+    uint256 public constant NO_TOKEN_ID = 2;
+    
+    // Referral fee: % of the protocol fee (e.g., 5000 = 50%)
+    uint256 public constant REFERRAL_COMMISSION_BPS = 5000; 
+    
+    // Secondary market fee (spread): 2%
+    uint256 public constant SECONDARY_FEE_BPS = 200; 
+
+    mapping(address => address) public userReferrer;
+    mapping(address => uint256) public referrerEarnings;
+    
+    struct Order {
+        uint256 id;
+        address maker;
+        uint256 amount;      // Shares for Selling, USDC for Buying
+        uint256 price;       // USDC per share (scaled by 1e6)
+        bool isYes;
+        bool isBuying;       // true: Maker wants to Buy YES/NO, false: Maker wants to Sell YES/NO
+        uint256 remaining;
+        bool isActive;
+    }
+    
+    mapping(uint256 => Order) public orders;
+    uint256 public nextOrderId;
     
     // ============ Events ============
     
@@ -61,14 +78,43 @@ contract BinaryMarket is Ownable, ReentrancyGuard {
     );
     
     event WinningsClaimed(
-        address indexed winner,
+        address indexed user,
         uint256 winnings,
         uint256 feeAmount,
         uint256 netPayout,
         uint256 timestamp
     );
     
+    event PositionSold(
+        address indexed user,
+        bool isYes,
+        uint256 shares,
+        uint256 usdcReceived,
+        uint256 fee,
+        uint256 timestamp
+    );
+
     event MarketCancelled(uint256 timestamp);
+    
+    event OrderPlaced(
+        uint256 indexed orderId,
+        address indexed maker,
+        uint256 amount,
+        uint256 price,
+        bool isYes,
+        bool isBuying,
+        uint256 timestamp
+    );
+    
+    event OrderCancelled(uint256 indexed orderId, uint256 timestamp);
+    event OrderFilled(uint256 indexed orderId, address indexed taker, uint256 amountFilled, uint256 timestamp);
+    
+    event ReferralCommissionPaid(
+        address indexed referrer,
+        address indexed referee,
+        uint256 amount,
+        uint256 timestamp
+    );
     
     event RefundClaimed(
         address indexed user,
@@ -76,13 +122,7 @@ contract BinaryMarket is Ownable, ReentrancyGuard {
         uint256 timestamp
     );
     
-    event TreasuryFeesCollected(
-        uint256 totalFees,
-        uint256 timestamp
-    );
-    
     event FeeUpdated(uint256 newFeeBps, uint256 timestamp);
-    
     event TreasuryUpdated(address newTreasury, uint256 timestamp);
     
     // ============ Constructor ============
@@ -94,7 +134,7 @@ contract BinaryMarket is Ownable, ReentrancyGuard {
         string memory _eventTitle,
         uint256 _endTime,
         uint256 _feeBps
-    ) {
+    ) ERC1155("") Ownable(msg.sender) {
         require(_usdc != address(0), "Invalid USDC address");
         require(_treasury != address(0), "Invalid treasury address");
         require(_endTime > block.timestamp, "End time must be in the future");
@@ -108,276 +148,375 @@ contract BinaryMarket is Ownable, ReentrancyGuard {
         feeBps = _feeBps;
         status = MarketStatus.OPEN;
         resolvedOutcome = Outcome.UNRESOLVED;
+        nextOrderId = 1;
+    }
+    
+    // ============ Order Book Functions ============
+
+    /**
+     * @dev Place a limit order.
+     * If isBuying is true, amount is USDC the maker is willing to spend.
+     * If isBuying is false, amount is shares the maker is willing to sell.
+     */
+    function placeLimitOrder(uint256 amount, uint256 price, bool isYes, bool isBuying) external nonReentrant {
+        require(status == MarketStatus.OPEN, "Market is not open");
+        require(amount > 0, "Amount must be > 0");
+        require(price > 0 && price < 1e6, "Price must be between 0 and 1 USDC");
+        
+        if (isBuying) {
+            // Maker locks USDC to buy shares later
+            require(usdc.transferFrom(msg.sender, address(this), amount), "USDC locking failed");
+        } else {
+            // Maker locks shares to sell later
+            uint256 tokenId = isYes ? YES_TOKEN_ID : NO_TOKEN_ID;
+            require(balanceOf(msg.sender, tokenId) >= amount, "Insufficient shares to sell");
+            _burn(msg.sender, tokenId, amount); // Move shares to contract or escrow? Better: record and track
+            // Actually, for simplicity, we keep them in contract's balance
+            // but since contract is the issuer, we can just record it
+        }
+        
+        uint256 orderId = nextOrderId++;
+        orders[orderId] = Order({
+            id: orderId,
+            maker: msg.sender,
+            amount: amount,
+            price: price,
+            isYes: isYes,
+            isBuying: isBuying,
+            remaining: amount,
+            isActive: true
+        });
+        
+        emit OrderPlaced(orderId, msg.sender, amount, price, isYes, isBuying, block.timestamp);
+    }
+    
+    function cancelLimitOrder(uint256 orderId) external nonReentrant {
+        Order storage order = orders[orderId];
+        require(order.isActive, "Order not active");
+        require(order.maker == msg.sender, "Not your order");
+        
+        order.isActive = false;
+        
+        if (order.isBuying) {
+            // Refund locked USDC
+            require(usdc.transfer(msg.sender, order.remaining), "Refund failed");
+        } else {
+            // Refund locked shares (re-mint)
+            uint256 tokenId = order.isYes ? YES_TOKEN_ID : NO_TOKEN_ID;
+            _mint(msg.sender, tokenId, order.remaining, "");
+        }
+        
+        emit OrderCancelled(orderId, block.timestamp);
+    }
+
+    /**
+     * @dev Taker fills an existing limit order.
+     */
+    function fillOrder(uint256 orderId, uint256 amountToFill) external nonReentrant {
+        Order storage order = orders[orderId];
+        require(order.isActive, "Order not active");
+        require(amountToFill > 0 && amountToFill <= order.remaining, "Invalid fill amount");
+        require(msg.sender != order.maker, "Cannot fill your own order");
+        
+        uint256 tokenId = order.isYes ? YES_TOKEN_ID : NO_TOKEN_ID;
+        
+        if (order.isBuying) {
+            // Maker wants to buy. Taker is selling shares to maker.
+            // amountToFill is USDC amount maker is spending.
+            uint256 sharesToGive = (amountToFill * 1e6) / order.price;
+            require(balanceOf(msg.sender, tokenId) >= sharesToGive, "Taker has no shares");
+            
+            _burn(msg.sender, tokenId, sharesToGive);
+            _mint(order.maker, tokenId, sharesToGive, "");
+            
+            require(usdc.transfer(msg.sender, amountToFill), "USDC to taker failed");
+        } else {
+            // Maker wants to sell shares. Taker is buying from maker.
+            // amountToFill is shares taker is buying.
+            uint256 cost = (amountToFill * order.price) / 1e6;
+            require(usdc.transferFrom(msg.sender, address(this), cost), "Taker payment failed");
+            
+            _mint(msg.sender, tokenId, amountToFill, "");
+            require(usdc.transfer(order.maker, cost), "USDC to maker failed");
+        }
+        
+        order.remaining -= amountToFill;
+        if (order.remaining == 0) {
+            order.isActive = false;
+        }
+        
+        emit OrderFilled(orderId, msg.sender, amountToFill, block.timestamp);
     }
     
     // ============ Core Functions ============
     
-    /**
-     * @dev Place a bet on YES outcome
-     * @param amount Amount of USDC to bet
-     */
     function buyYes(uint256 amount) external nonReentrant {
+        _buyYes(amount, address(0), 0);
+    }
+
+    function buyYesWithReferrer(uint256 amount, address referrer) external nonReentrant {
+        _buyYes(amount, referrer, 0); // 0 means no slippage protection
+    }
+
+    /**
+     * @dev Buy YES with referrer and slippage protection
+     */
+    function buyYesWithSlippage(uint256 amount, address referrer, uint256 minSharesOut) external nonReentrant {
+        _buyYes(amount, referrer, minSharesOut);
+    }
+
+    function _buyYes(uint256 amount, address referrer, uint256 minSharesOut) internal {
         require(status == MarketStatus.OPEN, "Market is not open");
         require(block.timestamp < endTime, "Market has ended");
         require(amount > 0, "Bet amount must be greater than 0");
         
-        // Transfer USDC from user to contract
-        require(
-            usdc.transferFrom(msg.sender, address(this), amount),
-            "USDC transfer failed"
-        );
+        require(usdc.transferFrom(msg.sender, address(this), amount), "USDC transfer failed");
         
-        yesBets[msg.sender] += amount;
+        uint256 totalPool = yesPoolAmount + noPoolAmount;
+        uint256 sharesToMint;
+        
+        if (totalPool == 0) {
+            sharesToMint = amount * 2; // Initial price 0.5
+        } else {
+            sharesToMint = (amount * totalPool) / (yesPoolAmount > 0 ? yesPoolAmount : 1);
+        }
+        
+        require(sharesToMint >= minSharesOut, "Slippage: Too few shares");
+        
         yesPoolAmount += amount;
+        _mint(msg.sender, YES_TOKEN_ID, sharesToMint, "");
+        
+        if (referrer != address(0) && referrer != msg.sender) {
+            userReferrer[msg.sender] = referrer;
+        }
         
         emit BetPlaced(msg.sender, true, amount, block.timestamp);
     }
     
-    /**
-     * @dev Place a bet on NO outcome
-     * @param amount Amount of USDC to bet
-     */
     function buyNo(uint256 amount) external nonReentrant {
+        _buyNo(amount, address(0), 0);
+    }
+
+    function buyNoWithReferrer(uint256 amount, address referrer) external nonReentrant {
+        _buyNo(amount, referrer, 0);
+    }
+
+    /**
+     * @dev Buy NO with referrer and slippage protection
+     */
+    function buyNoWithSlippage(uint256 amount, address referrer, uint256 minSharesOut) external nonReentrant {
+        _buyNo(amount, referrer, minSharesOut);
+    }
+
+    function _buyNo(uint256 amount, address referrer, uint256 minSharesOut) internal {
         require(status == MarketStatus.OPEN, "Market is not open");
         require(block.timestamp < endTime, "Market has ended");
         require(amount > 0, "Bet amount must be greater than 0");
         
-        // Transfer USDC from user to contract
-        require(
-            usdc.transferFrom(msg.sender, address(this), amount),
-            "USDC transfer failed"
-        );
+        require(usdc.transferFrom(msg.sender, address(this), amount), "USDC transfer failed");
         
-        noBets[msg.sender] += amount;
+        uint256 totalPool = yesPoolAmount + noPoolAmount;
+        uint256 sharesToMint;
+        
+        if (totalPool == 0) {
+            sharesToMint = amount * 2;
+        } else {
+            sharesToMint = (amount * totalPool) / (noPoolAmount > 0 ? noPoolAmount : 1);
+        }
+        
+        require(sharesToMint >= minSharesOut, "Slippage: Too few shares");
+        
         noPoolAmount += amount;
+        _mint(msg.sender, NO_TOKEN_ID, sharesToMint, "");
+        
+        if (referrer != address(0) && referrer != msg.sender) {
+            userReferrer[msg.sender] = referrer;
+        }
         
         emit BetPlaced(msg.sender, false, amount, block.timestamp);
     }
-    
+
     /**
-     * @dev Claim winnings after market is resolved
-     * 
-     * Payout formula: payout = (userBet * totalPool) / winningPool
-     * Fee is deducted from winnings and sent to treasury
-     * 
-     * Edge case: If winning pool is 0 (no one bet on winning outcome),
-     * all losers get refunded their principal bet amount
+     * @dev Claim winnings from a resolved market
      */
     function claimWinnings() external nonReentrant {
         require(status == MarketStatus.RESOLVED, "Market is not resolved");
-        require(!hasClaimed[msg.sender], "Already claimed winnings");
+        address referrer = userReferrer[msg.sender];
         
-        uint256 userBet = 0;
-        uint256 winningPool = 0;
-        uint256 totalPool = yesPoolAmount + noPoolAmount;
-        
-        // Determine user's bet and winning pool based on resolved outcome
+        uint256 sharesToBurn;
+        uint256 totalWinningShares;
+        uint256 poolToDistribute = yesPoolAmount + noPoolAmount;
+        uint256 tokenId;
+
         if (resolvedOutcome == Outcome.YES) {
-            userBet = yesBets[msg.sender];
-            winningPool = yesPoolAmount;
-            require(userBet > 0, "No YES bets to claim");
+            tokenId = YES_TOKEN_ID;
+            sharesToBurn = balanceOf(msg.sender, YES_TOKEN_ID);
+            totalWinningShares = totalSupply(YES_TOKEN_ID);
         } else if (resolvedOutcome == Outcome.NO) {
-            userBet = noBets[msg.sender];
-            winningPool = noPoolAmount;
-            require(userBet > 0, "No NO bets to claim");
+            tokenId = NO_TOKEN_ID;
+            sharesToBurn = balanceOf(msg.sender, NO_TOKEN_ID);
+            totalWinningShares = totalSupply(NO_TOKEN_ID);
         } else {
-            revert("Market outcome is unresolved");
+            revert("Outcome unresolved");
         }
-        
-        hasClaimed[msg.sender] = true;
-        
-        uint256 winnings = 0;
-        
-        // Edge case: if winning pool is 0, refund the user's principal
-        if (winningPool == 0) {
-            winnings = userBet;
-        } else {
-            // Standard payout: (userBet * totalPool) / winningPool
-            winnings = (userBet * totalPool) / winningPool;
-        }
-        
-        // Calculate and deduct protocol fee
+
+        require(sharesToBurn > 0, "No winning shares");
+        require(totalWinningShares > 0, "No winning shares total");
+
+        uint256 winnings = (sharesToBurn * poolToDistribute) / totalWinningShares;
         uint256 feeAmount = (winnings * feeBps) / 10000;
         uint256 netPayout = winnings - feeAmount;
         
-        // Transfer net payout to user
-        require(usdc.transfer(msg.sender, netPayout), "USDC transfer to user failed");
+        _burn(msg.sender, tokenId, sharesToBurn);
+        require(usdc.transfer(msg.sender, netPayout), "USDC payout failed");
         
-        // Transfer fee to treasury
         if (feeAmount > 0) {
-            require(usdc.transfer(treasury, feeAmount), "USDC transfer to treasury failed");
+            if (referrer != address(0)) {
+                uint256 referralBonus = (feeAmount * REFERRAL_COMMISSION_BPS) / 10000;
+                uint256 treasuryFee = feeAmount - referralBonus;
+                
+                referrerEarnings[referrer] += referralBonus;
+                
+                require(usdc.transfer(referrer, referralBonus), "Referral payout failed");
+                require(usdc.transfer(treasury, treasuryFee), "Treasury payout failed");
+                
+                emit ReferralCommissionPaid(referrer, msg.sender, referralBonus, block.timestamp);
+            } else {
+                require(usdc.transfer(treasury, feeAmount), "Treasury payout failed");
+            }
         }
         
         emit WinningsClaimed(msg.sender, winnings, feeAmount, netPayout, block.timestamp);
     }
-    
+
     /**
-     * @dev Claim refund if market is cancelled
-     * Users get back their principal bet amount
+     * @dev Sell a YES position back to the pool (AMM)
      */
-    function claimRefund() external nonReentrant {
-        require(status == MarketStatus.CANCELLED, "Market is not cancelled");
-        require(!hasClaimedRefund[msg.sender], "Already claimed refund");
-        
-        uint256 refundAmount = yesBets[msg.sender] + noBets[msg.sender];
-        require(refundAmount > 0, "No bets to refund");
-        
-        hasClaimedRefund[msg.sender] = true;
-        
-        require(usdc.transfer(msg.sender, refundAmount), "USDC refund transfer failed");
-        
-        emit RefundClaimed(msg.sender, refundAmount, block.timestamp);
-    }
-    
-    // ============ Admin Functions ============
-    
-    /**
-     * @dev Simple oracle resolution function (admin-controlled for MVP)
-     * In production, this would be replaced with UMA or Chainlink oracle
-     * @param outcome The resolved outcome (1 for YES, 2 for NO)
-     */
-    function adminResolve(uint256 outcome) external onlyOwner nonReentrant {
-        require(status == MarketStatus.OPEN, "Market already resolved");
-        require(outcome == 1 || outcome == 2, "Invalid outcome");
-        require(block.timestamp >= endTime, "Market has not ended");
-        
-        status = MarketStatus.RESOLVED;
-        resolvedOutcome = outcome == 1 ? Outcome.YES : Outcome.NO;
-        
-        emit MarketResolved(resolvedOutcome, block.timestamp);
-    }
-    
-    /**
-     * @dev Emergency cancel the market
-     * Users can call claimRefund() to get their principal back
-     */
-    function cancelMarket() external onlyOwner {
-        require(status == MarketStatus.OPEN, "Market already resolved or cancelled");
-        
-        status = MarketStatus.CANCELLED;
-        
-        emit MarketCancelled(block.timestamp);
-    }
-    
-    /**
-     * @dev Update the protocol fee (basis points)
-     * @param newFeeBps New fee in basis points (e.g., 200 = 2%)
-     */
-    function setFeeBps(uint256 newFeeBps) external onlyOwner {
-        require(newFeeBps <= 10000, "Fee cannot exceed 100%");
-        feeBps = newFeeBps;
-        emit FeeUpdated(newFeeBps, block.timestamp);
-    }
-    
-    /**
-     * @dev Update the treasury address
-     * @param newTreasury New treasury address
-     */
-    function setTreasury(address newTreasury) external onlyOwner {
-        require(newTreasury != address(0), "Invalid treasury address");
-        treasury = newTreasury;
-        emit TreasuryUpdated(newTreasury, block.timestamp);
-    }
-    
-    /**
-     * @dev Collect accumulated fees from the contract
-     * This is a view of what fees have been collected (for accounting)
-     * Fees are automatically sent to treasury during claimWinnings()
-     */
-    function getCollectedFees() external view returns (uint256) {
-        // Total pool minus what's been claimed
-        uint256 totalPool = yesPoolAmount + noPoolAmount;
-        uint256 contractBalance = usdc.balanceOf(address(this));
-        return totalPool - contractBalance;
-    }
-    
-    // ============ View Functions ============
-    
-    /**
-     * @dev Get current odds for YES outcome (as percentage 0-100)
-     */
-    function getYesOdds() external view returns (uint256) {
-        uint256 totalPool = yesPoolAmount + noPoolAmount;
-        if (totalPool == 0) return 50; // Default 50/50 if no bets
-        return (yesPoolAmount * 100) / totalPool;
-    }
-    
-    /**
-     * @dev Get current odds for NO outcome (as percentage 0-100)
-     */
-    function getNoOdds() external view returns (uint256) {
-        uint256 totalPool = yesPoolAmount + noPoolAmount;
-        if (totalPool == 0) return 50; // Default 50/50 if no bets
-        return (noPoolAmount * 100) / totalPool;
-    }
-    
-    /**
-     * @dev Get total pool size
-     */
-    function getTotalPool() external view returns (uint256) {
-        return yesPoolAmount + noPoolAmount;
-    }
-    
-    /**
-     * @dev Get user's bet amounts
-     */
-    function getUserBets(address user) external view returns (uint256 yesBet, uint256 noBet) {
-        return (yesBets[user], noBets[user]);
-    }
-    
-    /**
-     * @dev Get market status
-     */
-    function getMarketStatus() external view returns (string memory) {
-        if (status == MarketStatus.OPEN) return "OPEN";
-        if (status == MarketStatus.RESOLVED) return "RESOLVED";
-        return "CANCELLED";
-    }
-    
-    /**
-     * @dev Calculate expected payout for a hypothetical bet
-     * @param betAmount The amount to bet
-     * @param isYes Whether betting on YES
-     * @return expectedPayout The expected payout if this outcome wins
-     * @return expectedFee The expected fee deducted
-     */
-    function calculateExpectedPayout(uint256 betAmount, bool isYes) external view returns (uint256 expectedPayout, uint256 expectedFee) {
+    function sellYes(uint256 shares) external nonReentrant {
         require(status == MarketStatus.OPEN, "Market is not open");
+        require(balanceOf(msg.sender, YES_TOKEN_ID) >= shares, "Insufficient shares");
         
-        uint256 totalPool = yesPoolAmount + noPoolAmount;
-        uint256 winningPool = isYes ? yesPoolAmount : noPoolAmount;
+        uint256 currentPrice = getPrice(YES_TOKEN_ID);
+        uint256 usdcValue = (shares * currentPrice) / 1e6;
         
-        // If winning pool is 0, user gets their principal back
-        if (winningPool == 0) {
-            expectedPayout = betAmount;
-            expectedFee = 0;
+        uint256 fee = (usdcValue * SECONDARY_FEE_BPS) / 10000;
+        uint256 netReceived = usdcValue - fee;
+        
+        _burn(msg.sender, YES_TOKEN_ID, shares);
+        yesPoolAmount -= usdcValue;
+        
+        require(usdc.transfer(msg.sender, netReceived), "Transfer failed");
+        
+        address referrer = userReferrer[msg.sender];
+        if (referrer != address(0) && fee > 0) {
+            uint256 referralBonus = (fee * REFERRAL_COMMISSION_BPS) / 10000;
+            uint256 treasuryFee = fee - referralBonus;
+            
+            referrerEarnings[referrer] += referralBonus;
+            
+            require(usdc.transfer(referrer, referralBonus), "Referral failed");
+            require(usdc.transfer(treasury, treasuryFee), "Treasury failed");
+            
+            emit ReferralCommissionPaid(referrer, msg.sender, referralBonus, block.timestamp);
         } else {
-            uint256 grossPayout = ((betAmount + totalPool) * (betAmount + totalPool)) / (winningPool + betAmount);
-            expectedFee = (grossPayout * feeBps) / 10000;
-            expectedPayout = grossPayout - expectedFee;
+            require(usdc.transfer(treasury, fee), "Fee failed");
+        }
+        
+        emit PositionSold(msg.sender, true, shares, netReceived, fee, block.timestamp);
+    }
+
+    function sellNo(uint256 shares) external nonReentrant {
+        require(status == MarketStatus.OPEN, "Market is not open");
+        require(balanceOf(msg.sender, NO_TOKEN_ID) >= shares, "Insufficient shares");
+        
+        uint256 currentPrice = getPrice(NO_TOKEN_ID);
+        uint256 usdcValue = (shares * currentPrice) / 1e6;
+        
+        uint256 fee = (usdcValue * SECONDARY_FEE_BPS) / 10000;
+        uint256 netReceived = usdcValue - fee;
+        
+        _burn(msg.sender, NO_TOKEN_ID, shares);
+        noPoolAmount -= usdcValue;
+        
+        require(usdc.transfer(msg.sender, netReceived), "Transfer failed");
+        
+        address referrer = userReferrer[msg.sender];
+        if (referrer != address(0) && fee > 0) {
+            uint256 referralBonus = (fee * REFERRAL_COMMISSION_BPS) / 10000;
+            uint256 treasuryFee = fee - referralBonus;
+            
+            referrerEarnings[referrer] += referralBonus;
+            
+            require(usdc.transfer(referrer, referralBonus), "Referral failed");
+            require(usdc.transfer(treasury, treasuryFee), "Treasury failed");
+            
+            emit ReferralCommissionPaid(referrer, msg.sender, referralBonus, block.timestamp);
+        } else {
+            require(usdc.transfer(treasury, fee), "Fee failed");
+        }
+        
+        emit PositionSold(msg.sender, false, shares, netReceived, fee, block.timestamp);
+    }
+
+    function getPrice(uint256 tokenId) public view returns (uint256) {
+        uint256 totalPool = yesPoolAmount + noPoolAmount;
+        if (totalPool == 0) return 500000; // 0.5 USDC
+        if (tokenId == YES_TOKEN_ID) {
+            return (yesPoolAmount * 1e6) / totalPool;
+        } else {
+            return (noPoolAmount * 1e6) / totalPool;
         }
     }
+
+    // Supply Tracking
+    mapping(uint256 => uint256) private _supplies;
+    function totalSupply(uint256 id) public view returns (uint256) {
+        return _supplies[id];
+    }
     
-    /**
-     * @dev Get market details
-     */
-    function getMarketDetails() external view returns (
-        uint256 id,
-        string memory title,
-        uint256 end,
-        uint256 yesPool,
-        uint256 noPool,
-        string memory currentStatus,
-        uint256 currentFeeBps
-    ) {
-        return (
-            marketId,
-            eventTitle,
-            endTime,
-            yesPoolAmount,
-            noPoolAmount,
-            getMarketStatus(),
-            feeBps
-        );
+    function _update(address from, address to, uint256[] memory ids, uint256[] memory amounts) internal virtual override {
+        super._update(from, to, ids, amounts);
+        if (from == address(0)) {
+            for (uint256 i = 0; i < ids.length; i++) _supplies[ids[i]] += amounts[i];
+        }
+        if (to == address(0)) {
+            for (uint256 i = 0; i < ids.length; i++) _supplies[ids[i]] -= amounts[i];
+        }
+    }
+
+    // ============ Admin & Helper Functions ============
+
+    function adminResolve(uint256 outcome) external onlyOwner {
+        require(status == MarketStatus.OPEN, "Reached final state");
+        require(outcome == 1 || outcome == 2, "Invalid outcome");
+        status = MarketStatus.RESOLVED;
+        resolvedOutcome = outcome == 1 ? Outcome.YES : Outcome.NO;
+        emit MarketResolved(resolvedOutcome, block.timestamp);
+    }
+
+    function cancelMarket() external onlyOwner {
+        require(status == MarketStatus.OPEN, "Reached final state");
+        status = MarketStatus.CANCELLED;
+        emit MarketCancelled(block.timestamp);
+    }
+
+    function claimRefund(uint256 id) external nonReentrant {
+        require(status == MarketStatus.CANCELLED, "Not cancelled");
+        uint256 shares = balanceOf(msg.sender, id);
+        require(shares > 0, "No shares");
+        
+        // Payout principal: In simplified token model, we use the original pool ratio
+        // For simplicity in refund, we allow burning shares for their proportional share of the REMAINING pool
+        uint256 pool = yesPoolAmount + noPoolAmount;
+        uint256 total = totalSupply(id);
+        uint256 amount = (shares * pool) / (totalSupply(YES_TOKEN_ID) + totalSupply(NO_TOKEN_ID));
+        
+        _burn(msg.sender, id, shares);
+        require(usdc.transfer(msg.sender, amount), "Refund failed");
+        emit RefundClaimed(msg.sender, amount, block.timestamp);
+    }
+
+    function getMarketDetails() external view returns (uint256 id, string memory title, uint256 end, uint256 yesPool, uint256 noPool, string memory statusStr) {
+        return (marketId, eventTitle, endTime, yesPoolAmount, noPoolAmount, status == MarketStatus.OPEN ? "OPEN" : (status == MarketStatus.RESOLVED ? "RESOLVED" : "CANCELLED"));
     }
 }

@@ -38,7 +38,7 @@
     "home": "首页",
     "markets": "市场",
     "leaderboard": "排行榜",
-    "portfolio": "我的投资组合",
+    "portfolio": "我的钱包",
     "profile": "个人资料",
     "settings": "设置"
   },
@@ -103,9 +103,9 @@
     "viewDetails": "查看详情"
   },
   "portfolio": {
-    "title": "我的投资组合",
+    "title": "我的钱包资产",
     "subtitle": "追踪您的投资和绩效",
-    "totalValue": "投资组合总价值",
+    "totalValue": "钱包总价值",
     "totalGain": "总收益/亏损",
     "gainPercent": "收益百分比",
     "positions": "头寸",

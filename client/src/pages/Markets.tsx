@@ -7,10 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { trpc } from '@/lib/trpc';
 import { MarketCard, MarketCardSkeleton } from '@/components/MarketCard';
-import { Search, TrendingUp, Users, Clock, Filter, AlertCircle, RefreshCw, Zap } from 'lucide-react';
+import { Search, TrendingUp, Users, Clock, Filter, AlertCircle, RefreshCw } from 'lucide-react';
 import { useLanguageContext } from '@/contexts/LanguageContext';
 import messages from '../../../messages';
-import { toast } from 'sonner';
 
 type CategoryFilter = 'all' | 'world cup' | 'sports' | 'politics' | 'crypto' | 'entertainment' | 'other';
 
@@ -44,17 +43,6 @@ export default function Markets() {
       window.history.replaceState({}, '', url.toString());
     }
   };
-
-  // Sync Mutation
-  const syncMutation = trpc.markets.sync.useMutation({
-    onSuccess: (data) => {
-      toast.success(`Success! Created ${data.createdCount} new markets. Ready for discovery.`);
-      refetchNexus();
-    },
-    onError: (error) => {
-      toast.error(`Sync failure: ${error.message}. Please check database connection.`);
-    }
-  });
 
   // Fetch Nexus markets (DB synced)
   const { 
@@ -187,16 +175,6 @@ export default function Markets() {
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => syncMutation.mutate()}
-              disabled={syncMutation.isPending}
-              className={`h-9 px-3 border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary transition-all ${syncMutation.isPending ? 'opacity-70' : ''}`}
-            >
-              <Zap className={`w-4 h-4 mr-2 ${syncMutation.isPending ? 'animate-pulse' : ''}`} />
-              {syncMutation.isPending ? (t_i18n.common.syncing || 'Syncing...') : (t_i18n.common.syncMarkets || 'Sync Markets')}
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
               onClick={() => refetchNexus()}
               disabled={isFetching}
               className="h-9 px-3 border-border bg-card hover:bg-muted"
@@ -227,7 +205,7 @@ export default function Markets() {
                 className="h-11 px-4"
               >
                 <TrendingUp className="w-4 h-4 mr-2" />
-                {t_i18n.markets.volume || 'Volume'}
+                {t_i18n.markets.volume}
               </Button>
               <Button
                 variant={sortBy === 'participants' ? 'default' : 'outline'}
@@ -236,7 +214,7 @@ export default function Markets() {
                 className="h-11 px-4"
               >
                 <Users className="w-4 h-4 mr-2" />
-                {t_i18n.markets.traders || 'Traders'}
+                {t_i18n.markets.traders}
               </Button>
               <Button
                 variant={sortBy === 'endDate' ? 'default' : 'outline'}
@@ -245,7 +223,7 @@ export default function Markets() {
                 className="h-11 px-4"
               >
                 <Clock className="w-4 h-4 mr-2" />
-                {t_i18n.common.date || 'Date'}
+                {t_i18n.common.date}
               </Button>
             </div>
           </div>

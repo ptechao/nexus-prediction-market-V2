@@ -16,6 +16,9 @@ export interface GenericMarketSeed {
   tags: string[];
   yesOdds?: number;
   noOdds?: number;
+  totalPool?: number;
+  volume24h?: number;
+  participants?: number;
 }
 
 /**

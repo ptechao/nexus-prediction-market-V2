@@ -10,6 +10,7 @@ import { formatPoolSize, formatEndDate } from '@/lib/mockMarkets';
 import { Search, TrendingUp, Users, Clock, AlertCircle, RefreshCw } from 'lucide-react';
 import { AITranslatedText } from '@/components/AITranslatedText';
 import { toast } from 'sonner';
+import { useTranslation } from '@/hooks/useTranslation';
 
 type CategoryFilter = 'all' | 'sports' | 'politics' | 'crypto' | 'entertainment' | 'other';
 
@@ -48,7 +49,7 @@ function MarketCard({ market, isLiveData }: { market: any; isLiveData: boolean }
 
         </div>
         <div className="text-right">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Pool Size</p>
+          <AITranslatedText as="p" className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5" text="Pool Size" />
           <p className="text-sm font-bold text-foreground">{formatPoolSize(market.poolSize)}</p>
         </div>
       </div>
@@ -74,15 +75,15 @@ function MarketCard({ market, isLiveData }: { market: any; isLiveData: boolean }
       {/* Stats */}
       <div className="px-4 py-3 mt-4 border-t border-border grid grid-cols-3 gap-2 text-center text-[10px] text-muted-foreground">
         <div>
-          <p className="mb-0.5 uppercase tracking-wider">Vol 24h</p>
+          <AITranslatedText as="p" className="mb-0.5 uppercase tracking-wider" text="Vol 24h" />
           <p className="font-bold text-foreground text-xs">{formatPoolSize(market.volume24h)}</p>
         </div>
         <div>
-          <p className="mb-0.5 uppercase tracking-wider">Traders</p>
+          <AITranslatedText as="p" className="mb-0.5 uppercase tracking-wider" text="Traders" />
           <p className="font-bold text-foreground text-xs">{market.participants?.toLocaleString()}</p>
         </div>
         <div>
-          <p className="mb-0.5 uppercase tracking-wider">Ends in</p>
+          <AITranslatedText as="p" className="mb-0.5 uppercase tracking-wider" text="Ends in" />
           <p className="font-bold text-foreground text-xs">{formatEndDate(market.endDate)}</p>
         </div>
       </div>
@@ -95,14 +96,14 @@ function MarketCard({ market, isLiveData }: { market: any; isLiveData: boolean }
             disabled={isBetting}
             className="bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 shadow-none font-semibold text-sm h-10 border border-blue-200 dark:border-blue-500/20 transition-colors"
           >
-            Bet YES
+            <AITranslatedText text="Bet YES" />
           </Button>
           <Button
             onClick={(e) => handleBet('no', e)}
             disabled={isBetting}
             className="bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-500/10 dark:hover:bg-red-500/20 dark:text-red-400 shadow-none font-semibold text-sm h-10 border border-red-200 dark:border-red-500/20 transition-colors"
           >
-            Bet NO
+            <AITranslatedText text="Bet NO" />
           </Button>
         </div>
       </div>
@@ -114,6 +115,7 @@ function MarketCard({ market, isLiveData }: { market: any; isLiveData: boolean }
  * Markets Page with Polymarket Integration
  */
 export default function MarketsPageWithPolymarket() {
+  const { t } = useTranslation();
   const { isConnected } = useAccount();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>('all');
@@ -143,9 +145,9 @@ export default function MarketsPageWithPolymarket() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Prediction Markets</h1>
+          <AITranslatedText as="h1" className="text-3xl font-bold text-foreground mb-2" text="Prediction Markets" />
           <p className="text-muted-foreground">
-            {isLiveData ? '📊 Discover live on-chain markets' : '📋 Local network markets'}
+            {isLiveData ? <AITranslatedText text="📊 Discover live on-chain markets" /> : <AITranslatedText text="📋 Local network markets" />}
           </p>
         </div>
 
@@ -156,7 +158,7 @@ export default function MarketsPageWithPolymarket() {
               <div className="flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold text-red-900">Error Loading Markets</p>
+                  <AITranslatedText as="p" className="text-sm font-semibold text-red-900" text="Error Loading Markets" />
                   <p className="text-sm text-red-800 mt-1">{error}</p>
                 </div>
               </div>
@@ -170,28 +172,26 @@ export default function MarketsPageWithPolymarket() {
         {/* Wallet Connection Alert */}
         {!isConnected && (
           <Card className="mb-6 border-yellow-200 bg-yellow-50 p-4">
-            <p className="text-sm text-yellow-800">
-              ⚠️ Connect your wallet to place bets on these markets
-            </p>
+            <AITranslatedText as="p" className="text-sm text-yellow-800" text="⚠️ Connect your wallet to place bets on these markets" />
           </Card>
         )}
 
         {/* Stats Bar */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <Card className="p-4 bg-card border border-border">
-            <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">Total Markets</p>
+            <AITranslatedText as="p" className="text-xs text-muted-foreground mb-1 uppercase tracking-wider" text="Total Markets" />
             <p className="text-2xl font-bold text-foreground">{stats.totalMarkets}</p>
           </Card>
           <Card className="p-4 bg-card border border-border">
-            <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">Total Volume</p>
+            <AITranslatedText as="p" className="text-xs text-muted-foreground mb-1 uppercase tracking-wider" text="Total Volume" />
             <p className="text-2xl font-bold text-foreground">{formatPoolSize(stats.totalVolume)}</p>
           </Card>
           <Card className="p-4 bg-card border border-border">
-            <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">Participants</p>
+            <AITranslatedText as="p" className="text-xs text-muted-foreground mb-1 uppercase tracking-wider" text="Participants" />
             <p className="text-2xl font-bold text-foreground">{stats.totalParticipants.toLocaleString()}</p>
           </Card>
           <Card className="p-4 bg-card border border-border">
-            <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">Avg Pool Size</p>
+            <AITranslatedText as="p" className="text-xs text-muted-foreground mb-1 uppercase tracking-wider" text="Avg Pool Size" />
             <p className="text-2xl font-bold text-foreground">{formatPoolSize(stats.averagePoolSize)}</p>
           </Card>
         </div>
@@ -203,7 +203,7 @@ export default function MarketsPageWithPolymarket() {
             <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
             <Input
               type="text"
-              placeholder="Search markets..."
+              placeholder={t('markets.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 py-2"
@@ -232,7 +232,7 @@ export default function MarketsPageWithPolymarket() {
               size="sm"
             >
               <TrendingUp className="w-4 h-4 mr-2" />
-              Sort by Volume
+              <AITranslatedText text="Sort by Volume" />
             </Button>
             <Button
               variant={sortBy === 'participants' ? 'default' : 'outline'}
@@ -240,7 +240,7 @@ export default function MarketsPageWithPolymarket() {
               size="sm"
             >
               <Users className="w-4 h-4 mr-2" />
-              Sort by Participants
+              <AITranslatedText text="Sort by Participants" />
             </Button>
             <Button
               variant={sortBy === 'endDate' ? 'default' : 'outline'}
@@ -248,7 +248,7 @@ export default function MarketsPageWithPolymarket() {
               size="sm"
             >
               <Clock className="w-4 h-4 mr-2" />
-              Sort by End Date
+              <AITranslatedText text="Sort by End Date" />
             </Button>
           </div>
         </div>
@@ -271,7 +271,7 @@ export default function MarketsPageWithPolymarket() {
           </div>
         ) : !isLoading ? (
           <Card className="p-12 text-center">
-            <p className="text-lg text-muted-foreground">No markets found matching your criteria</p>
+            <AITranslatedText as="p" className="text-lg text-muted-foreground" text="No markets found matching your criteria" />
             <Button
               variant="outline"
               onClick={() => {
@@ -280,7 +280,7 @@ export default function MarketsPageWithPolymarket() {
               }}
               className="mt-4"
             >
-              Clear Filters
+              <AITranslatedText text="Clear Filters" />
             </Button>
           </Card>
         ) : null}

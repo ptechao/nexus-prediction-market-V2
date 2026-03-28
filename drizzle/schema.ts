@@ -38,9 +38,14 @@ export const markets = sqliteTable("markets", {
   startTime: text("startTime"),
   endTime: text("endTime").notNull(),
   image: text("image"),
-  tags: text("tags", { mode: 'json' }).$type<string[]>().default('[]'),
+  tags: text("tags", { mode: 'json' }).$type<string[]>().default([]),
   yesOdds: real("yesOdds"),
   noOdds: real("noOdds"),
+  totalPool: real("totalPool").default(0),
+  yesPool: real("yesPool").default(0),
+  noPool: real("noPool").default(0),
+  volume24h: real("volume24h").default(0),
+  participants: integer("participants", { mode: 'number' }).default(0),
   status: text("status", { enum: [
     "OPEN",
     "RESOLVED",
@@ -53,6 +58,7 @@ export const markets = sqliteTable("markets", {
   outcome: text("outcome", { enum: ["YES", "NO", "DRAW", "INVALID"] }),
   disputeStartedAt: text("disputeStartedAt"),
   disputeEndsAt: text("disputeEndsAt"),
+  contractAddress: text("contractAddress"),
   createdAt: text("createdAt").default(sql`CURRENT_TIMESTAMP`).notNull(),
   updatedAt: text("updatedAt").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
@@ -155,4 +161,31 @@ export const followerTrades = sqliteTable("followerTrades", {
   txHash: text("txHash"),
   createdAt: text("createdAt").default(sql`CURRENT_TIMESTAMP`).notNull(),
   updatedAt: text("updatedAt").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+// Table to track real price movements for K-lines/charts
+export const marketPriceHistory = sqliteTable("market_price_history", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  marketId: text("market_id").notNull(),
+  priceYes: real("price_yes").notNull(),
+  priceNo: real("price_no").notNull(),
+  totalPool: integer("total_pool").notNull(),
+  timestamp: integer("timestamp").notNull(),
+});
+
+/**
+ * Limit Orders for the Order Book
+ */
+export const orders = sqliteTable("orders", {
+  id: integer("id", { mode: 'number' }).primaryKey({ autoIncrement: true }),
+  marketId: integer("marketId").notNull(),
+  orderIdOnChain: integer("orderIdOnChain"), // The ID from the smart contract
+  maker: text("maker").notNull(),
+  amount: real("amount").notNull(),
+  price: real("price").notNull(),
+  isYes: integer("isYes", { mode: 'boolean' }).notNull(),
+  isBuying: integer("isBuying", { mode: 'boolean' }).notNull(),
+  remaining: real("remaining").notNull(),
+  status: text("status", { enum: ["OPEN", "FILLED", "CANCELLED"] }).default("OPEN"),
+  createdAt: text("createdAt").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });

@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { ArrowUpRight, ArrowDownRight, TrendingUp, Copy } from 'lucide-react';
 import { useNexus } from '@/hooks/useNexus';
 import { toast } from 'sonner';
+import { AITranslatedText } from '@/components/AITranslatedText';
 
 // Mock vault data
 const MOCK_VAULTS = [
@@ -136,34 +137,34 @@ function CopyTradeModal({ vault, isOpen, onClose }: CopyTradeModalProps) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Copy Trade with {vault.name}</DialogTitle>
+          <DialogTitle><AITranslatedText text={`Copy Trade with ${vault.name}`} /></DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Vault Info */}
           <div className="rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 p-4">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium text-gray-600">Vault Stats</span>
+              <span className="text-sm font-medium text-gray-600"><AITranslatedText text="Vault Stats" /></span>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <p className="text-xs text-gray-500">Total Assets</p>
+                <AITranslatedText as="p" className="text-xs text-gray-500" text="Total Assets" />
                 <p className="text-lg font-semibold text-gray-900">
                   ${(vault.totalAssets / 1000).toFixed(1)}K
                 </p>
               </div>
               <div>
-                <p className="text-xs text-gray-500">7D ROI</p>
+                <AITranslatedText as="p" className="text-xs text-gray-500" text="7D ROI" />
                 <p className={`text-lg font-semibold ${vault.roi7d >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {vault.roi7d >= 0 ? '+' : ''}{vault.roi7d}%
                 </p>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Win Rate</p>
+                <AITranslatedText as="p" className="text-xs text-gray-500" text="Win Rate" />
                 <p className="text-lg font-semibold text-gray-900">{(vault.winRate * 100).toFixed(0)}%</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500">NAV/Share</p>
+                <AITranslatedText as="p" className="text-xs text-gray-500" text="NAV/Share" />
                 <p className="text-lg font-semibold text-gray-900">${vault.navPerShare.toFixed(2)}</p>
               </div>
             </div>
@@ -173,7 +174,7 @@ function CopyTradeModal({ vault, isOpen, onClose }: CopyTradeModalProps) {
           {step === 'amount' && (
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-700">Deposit Amount (USDC)</label>
+                <AITranslatedText as="label" className="text-sm font-medium text-gray-700" text="Deposit Amount (USDC)" />
                 <Input
                   type="number"
                   placeholder="Enter amount"
@@ -184,7 +185,7 @@ function CopyTradeModal({ vault, isOpen, onClose }: CopyTradeModalProps) {
                 />
                 {usdcBalance && (
                   <p className="mt-2 text-xs text-gray-500">
-                    Balance: {(Number(usdcBalance) / 1e6).toFixed(2)} USDC
+                    <AITranslatedText text="Balance" />: {(Number(usdcBalance) / 1e6).toFixed(2)} USDC
                   </p>
                 )}
               </div>
@@ -211,7 +212,7 @@ function CopyTradeModal({ vault, isOpen, onClose }: CopyTradeModalProps) {
               {depositAmount && (
                 <div className="rounded-lg bg-gray-50 p-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Estimated Shares</span>
+                    <span className="text-sm text-gray-600"><AITranslatedText text="Estimated Shares" /></span>
                     <span className="font-semibold text-gray-900">{estimatedShares}</span>
                   </div>
                 </div>
@@ -222,7 +223,7 @@ function CopyTradeModal({ vault, isOpen, onClose }: CopyTradeModalProps) {
                 disabled={!depositAmount || parseFloat(depositAmount) <= 0 || isLoading || !isConnected}
                 className="w-full"
               >
-                {isLoading ? 'Processing...' : 'Next: Approve USDC'}
+                {isLoading ? <AITranslatedText text="Processing..." /> : <AITranslatedText text="Next: Approve USDC" />}
               </Button>
             </div>
           )}
@@ -235,17 +236,17 @@ function CopyTradeModal({ vault, isOpen, onClose }: CopyTradeModalProps) {
                   <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
                     <Copy className="w-4 h-4 text-green-600" />
                   </div>
-                  <span className="font-medium text-green-900">Ready to deposit</span>
+                  <AITranslatedText as="span" className="font-medium text-green-900" text="Ready to deposit" />
                 </div>
                 <div className="space-y-2 text-sm text-green-800">
-                  <p>• USDC approved for vault</p>
-                  <p>• You will receive {estimatedShares} shares</p>
-                  <p>• 20% performance fee applies to profits</p>
+                  <p>• <AITranslatedText text="USDC approved for vault" /></p>
+                  <p>• <AITranslatedText text={`You will receive ${estimatedShares} shares`} /></p>
+                  <p>• <AITranslatedText text="20% performance fee applies to profits" /></p>
                 </div>
               </div>
 
               <Button onClick={handleDeposit} disabled={isLoading} className="w-full">
-                {isLoading ? 'Depositing...' : 'Confirm Deposit'}
+                {isLoading ? <AITranslatedText text="Depositing..." /> : <AITranslatedText text="Confirm Deposit" />}
               </Button>
 
               <Button
@@ -254,7 +255,7 @@ function CopyTradeModal({ vault, isOpen, onClose }: CopyTradeModalProps) {
                 disabled={isLoading}
                 className="w-full"
               >
-                Back
+                <AITranslatedText text="Back" />
               </Button>
             </div>
           )}
@@ -299,16 +300,14 @@ export default function LeaderboardPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Top Traders</h1>
-          <p className="text-lg text-gray-600">Copy the strategies of successful traders and earn passive income</p>
+          <AITranslatedText as="h1" className="text-4xl font-bold text-gray-900 mb-2" text="Top Traders" />
+          <AITranslatedText as="p" className="text-lg text-gray-600" text="Copy the strategies of successful traders and earn passive income" />
         </div>
 
         {/* Wallet Connection Alert */}
         {!isConnected && (
           <Card className="mb-6 border-yellow-200 bg-yellow-50 p-4">
-            <p className="text-sm text-yellow-800">
-              💡 Connect your wallet to copy trade with any of these vaults
-            </p>
+            <AITranslatedText as="p" className="text-sm text-yellow-800" text="💡 Connect your wallet to copy trade with any of these vaults" />
           </Card>
         )}
 
@@ -319,21 +318,21 @@ export default function LeaderboardPage() {
             onClick={() => setSortBy('roi')}
             size="sm"
           >
-            Sort by ROI
+            <AITranslatedText text="Sort by ROI" />
           </Button>
           <Button
             variant={sortBy === 'tvl' ? 'default' : 'outline'}
             onClick={() => setSortBy('tvl')}
             size="sm"
           >
-            Sort by TVL
+            <AITranslatedText text="Sort by TVL" />
           </Button>
           <Button
             variant={sortBy === 'winRate' ? 'default' : 'outline'}
             onClick={() => setSortBy('winRate')}
             size="sm"
           >
-            Sort by Win Rate
+            <AITranslatedText text="Sort by Win Rate" />
           </Button>
         </div>
 
@@ -344,25 +343,25 @@ export default function LeaderboardPage() {
               <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Rank
+                    <AITranslatedText text="Rank" />
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Leader
+                    <AITranslatedText text="Leader" />
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Total Assets
+                    <AITranslatedText text="Total Assets" />
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    7D ROI
+                    <AITranslatedText text="7D ROI" />
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Win Rate
+                    <AITranslatedText text="Win Rate" />
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Followers
+                    <AITranslatedText text="Followers" />
                   </th>
                   <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Action
+                    <AITranslatedText text="Action" />
                   </th>
                 </tr>
               </thead>
@@ -419,7 +418,7 @@ export default function LeaderboardPage() {
                         disabled={!isConnected}
                         className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
                       >
-                        Copy Trade
+                        <AITranslatedText text="Copy Trade" />
                       </Button>
                     </td>
                   </tr>

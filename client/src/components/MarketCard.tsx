@@ -86,7 +86,7 @@ export function MarketCard({ market }: { market: Market }) {
           {market.isTrending && (
             <span className="text-[10px] flex items-center gap-1 font-semibold text-orange-500 bg-orange-500/10 px-2 py-0.5 rounded-md">
               <Flame className="w-3 h-3" />
-              {t.markets.trending || 'Hot'}
+              {t.markets.trending}
             </span>
           )}
         </div>
@@ -113,7 +113,7 @@ export function MarketCard({ market }: { market: Market }) {
           className="font-medium text-sm sm:text-base text-foreground mb-1 leading-snug line-clamp-3 group-hover:text-primary transition-colors" 
         />
         <div className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-3 mt-2">
-          <span className="font-semibold text-foreground">{formatPool(market.totalPool)}</span> {t.markets.volumeShort || 'Vol.'}
+          <span className="font-semibold text-foreground">{formatPool(market.totalPool)}</span> {t.common.volumeShort}
         </div>
       </div>
 
@@ -121,10 +121,10 @@ export function MarketCard({ market }: { market: Market }) {
       <div className="px-3 sm:px-4 mt-3 sm:mt-4">
         <div className="flex justify-between items-center mb-1 sm:mb-1.5">
           <span className="text-xs sm:text-sm font-semibold text-blue-600 dark:text-blue-500">
-            {t.betting.yes || 'Yes'} {market.yesOdds}%
+            {t.betting.yes} {market.yesOdds}%
           </span>
           <span className="text-xs sm:text-sm font-semibold text-red-500 dark:text-red-400">
-            {t.betting.no || 'No'} {market.noOdds}%
+            {t.betting.no} {market.noOdds}%
           </span>
         </div>
         <div className="h-1.5 rounded-full bg-muted overflow-hidden flex">
@@ -146,13 +146,13 @@ export function MarketCard({ market }: { market: Market }) {
             onClick={(e) => handleBet('yes', e)}
             className="bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 shadow-none font-semibold text-xs sm:text-sm h-9 sm:h-10 border border-blue-200 dark:border-blue-500/20 transition-colors"
           >
-            {t.markets.bet} {t.betting.yes}
+            {t.markets.betYes}
           </Button>
           <Button
             onClick={(e) => handleBet('no', e)}
-            className="bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-500/10 dark:hover:bg-red-500/20 dark:text-red-400 shadow-none font-semibold text-xs sm:text-sm h-9 sm:h-10 border border-red-200 dark:border-red-500/20 transition-colors"
+            className="bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-500/10 dark:hover:bg-red-500/20 dark:text-red-400 shadow-none font-semibold text-xs sm:text-sm h-9 sm:h-10 border border-red-200 dark:border-red-200 transition-colors"
           >
-            {t.markets.bet} {t.betting.no}
+            {t.markets.betNo}
           </Button>
         </div>
       </div>

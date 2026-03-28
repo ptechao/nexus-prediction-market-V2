@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { getDb } from "../db";
 import { markets } from "../../drizzle/schema";
-import { fetchTopMarkets } from "../polymarket";
+import { fetchTopMarkets, fetchMarketsByTag } from "../polymarket";
 import { fetchUpcomingMatches, convertToMarketSeed } from "../services/sources/apiFootball";
 import { 
   fetchKalshiMarkets, 
@@ -38,6 +38,9 @@ async function processMarketSeeds(db: any, seeds: GenericMarketSeed[], sourceNam
           .set({
             yesOdds: seed.yesOdds !== undefined ? seed.yesOdds : existing[0].yesOdds,
             noOdds: seed.noOdds !== undefined ? seed.noOdds : existing[0].noOdds,
+            totalPool: seed.totalPool !== undefined ? seed.totalPool : existing[0].totalPool,
+            volume24h: seed.volume24h !== undefined ? seed.volume24h : existing[0].volume24h,
+            participants: seed.participants !== undefined ? seed.participants : existing[0].participants,
             updatedAt: new Date().toISOString(),
           })
           .where(eq(markets.id, existing[0].id));
@@ -61,6 +64,11 @@ async function processMarketSeeds(db: any, seeds: GenericMarketSeed[], sourceNam
         tags: seed.tags || [],
         yesOdds: seed.yesOdds !== undefined ? seed.yesOdds : 50.00,
         noOdds: seed.noOdds !== undefined ? seed.noOdds : 50.00,
+        totalPool: seed.totalPool !== undefined ? seed.totalPool : 0,
+        yesPool: seed.totalPool !== undefined ? (seed.totalPool * (seed.yesOdds || 50) / 100) : 0,
+        noPool: seed.totalPool !== undefined ? (seed.totalPool * (seed.noOdds || 50) / 100) : 0,
+        volume24h: seed.volume24h !== undefined ? seed.volume24h : 0,
+        participants: seed.participants !== undefined ? seed.participants : 0,
         status: "OPEN",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -109,7 +117,10 @@ export async function createMarketsJob(options: CreateMarketJobOptions = {}) {
       image: m.image || undefined,
       tags: [m.category, "Polymarket"],
       yesOdds: m.yesOdds,
-      noOdds: m.noOdds
+      noOdds: m.noOdds,
+      totalPool: m.totalPool,
+      volume24h: m.volume24h,
+      participants: m.participants
     }));
     const pmRes = await processMarketSeeds(db, pmSeeds, "Polymarket-Top", dryRun);
     totalCreated += pmRes.created;
@@ -133,7 +144,10 @@ export async function createMarketsJob(options: CreateMarketJobOptions = {}) {
           image: m.image || undefined,
           tags: [m.category, tag, "Polymarket"],
           yesOdds: m.yesOdds,
-          noOdds: m.noOdds
+          noOdds: m.noOdds,
+          totalPool: m.totalPool,
+          volume24h: m.volume24h,
+          participants: m.participants
         }));
         const tRes = await processMarketSeeds(db, taggedSeeds, `Polymarket-${tag}`, dryRun);
         totalCreated += tRes.created;
@@ -211,6 +225,11 @@ export async function createMarketsJob(options: CreateMarketJobOptions = {}) {
       totalCreated += wcRes.created;
       totalSkipped += wcRes.skipped;
     }
+
+    // 6. Run Market Maker simulation
+    console.log("\n🤖 Running Market Maker stimulation...");
+    const { marketMakerJob } = await import("./marketMaker");
+    await marketMakerJob();
 
     console.log(`\n📈 Job Summary:`);
     console.log(`  Created: ${totalCreated}`);

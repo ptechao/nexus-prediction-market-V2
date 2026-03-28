@@ -7,6 +7,12 @@ import superjson from "superjson";
 import App from "./App";
 import { getLoginUrl } from "./const";
 import "./index.css";
+// Capture referral address from URL
+const params = new URLSearchParams(window.location.search);
+const referral = params.get('ref');
+if (referral && referral.startsWith('0x')) {
+  localStorage.setItem('nexus_referral', referral);
+}
 
 const queryClient = new QueryClient();
 

@@ -1,0 +1,10 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "TestFeeMechanism",
+  "sourceName": "contracts/BinaryMarket.test.sol",
+  "abi": [],
+  "bytecode": "0x6080604052348015600e575f80fd5b50603e80601a5f395ff3fe60806040525f80fdfea2646970667358221220fa26cdc911577b6ebc39a4da08d2ae2e9f3f7c43529d901d3522430ac4ed48ab64736f6c63430008180033",
+  "deployedBytecode": "0x60806040525f80fdfea2646970667358221220fa26cdc911577b6ebc39a4da08d2ae2e9f3f7c43529d901d3522430ac4ed48ab64736f6c63430008180033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

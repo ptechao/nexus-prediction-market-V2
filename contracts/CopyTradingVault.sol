@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./BinaryMarket.sol";
 
 /**
@@ -109,10 +109,13 @@ contract CopyTradingVault is ERC20, Ownable, ReentrancyGuard {
         address _usdc,
         uint256 _vaultId,
         string memory _leaderName
-    ) ERC20(
-        string(abi.encodePacked("NEXUS-", _leaderName)),
-        string(abi.encodePacked("NXS-", _leaderName))
-    ) {
+    ) 
+        ERC20(
+            string(abi.encodePacked("NEXUS-", _leaderName)),
+            string(abi.encodePacked("NXS-", _leaderName))
+        )
+        Ownable(msg.sender) 
+    {
         require(_usdc != address(0), "Invalid USDC address");
         
         usdc = IERC20(_usdc);
@@ -433,7 +436,7 @@ contract CopyTradingVault is ERC20, Ownable, ReentrancyGuard {
         
         // Claim refund from market
         uint256 balanceBefore = usdc.balanceOf(address(this));
-        market.claimRefund();
+        market.claimRefund(position.isYes ? 1 : 2);
         uint256 balanceAfter = usdc.balanceOf(address(this));
         
         uint256 refund = balanceAfter - balanceBefore;

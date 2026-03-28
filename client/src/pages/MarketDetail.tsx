@@ -1,7 +1,10 @@
 import { useState, useMemo } from 'react';
 import { useRoute, Link } from 'wouter';
+import { useAccount } from 'wagmi';
+import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 import {
   ArrowLeft,
   TrendingUp,
@@ -20,6 +23,14 @@ import {
   XCircle,
   ChevronRight,
   Info,
+  Check,
+  Share2,
+  Copy,
+  ListFilter,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  History,
+  HelpCircle,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -38,6 +49,9 @@ import { toast } from 'sonner';
 import { useLanguageContext } from '@/contexts/LanguageContext';
 import messages from '../../../messages';
 import { useTranslation } from '@/hooks/useTranslation';
+import { PositionManager } from '@/components/PositionManager';
+import { useNexus } from '@/hooks/useNexus';
+import { parseUnits } from 'viem';
 
 // ─── Local Helpers ─────────────────────────────────────────────────────
 const getCategoryColor = (category: string) => {
@@ -390,35 +404,93 @@ function MarketNotFound() {
 
 // ─── Trading Panel ─────────────────────────────────────────────────────
 function TradingPanel({
+  marketAddress,
   yesOdds,
   noOdds,
   title,
+  tradeType,
+  setTradeType,
+  limitPrice,
+  setLimitPrice,
+  isLimitBuying,
+  setIsLimitBuying,
 }: {
+  marketAddress: string;
   yesOdds: number;
   noOdds: number;
   title: string;
+  tradeType: 'market' | 'limit';
+  setTradeType: (t: 'market' | 'limit') => void;
+  limitPrice: string;
+  setLimitPrice: (p: string) => void;
+  isLimitBuying: boolean;
+  setIsLimitBuying: (b: boolean) => void;
 }) {
+  const { buyYes, buyNo, placeLimitOrder, isLoading: isTxLoading } = useNexus(marketAddress);
+  const [slippage, setSlippage] = useState(1); // 1% default
   const { language } = useLanguageContext();
   const t = (messages as Record<string, any>)[language] || messages.en;
   const [activeTab, setActiveTab] = useState<'yes' | 'no'>('yes');
   const [amount, setAmount] = useState('');
 
   const amountNum = parseFloat(amount) || 0;
-  const odds = activeTab === 'yes' ? yesOdds : noOdds;
-  const price = odds / 100; // e.g., 56% → $0.56 per share
-  const estShares = price > 0 ? amountNum / price : 0;
-  const potentialReturn = estShares; // Each share pays $1 if correct
-  const potentialProfit = potentialReturn - amountNum;
+  const { isConnected } = useAccount();
+  const { openConnectModal } = useConnectModal();
 
-  const handlePlaceOrder = () => {
-    if (amountNum <= 0) {
-      toast.error(t.errors.invalidAmount || 'Please enter a valid amount');
+  const odds = activeTab === 'yes' ? yesOdds : noOdds;
+  const price = odds / 100;
+  
+  // Market Calc
+  const estShares = price > 0 ? amountNum / price : 0;
+  const minSharesOut = parseUnits((estShares * (1 - slippage / 100)).toFixed(6), 6);
+  
+  // Limit Calc
+  const limitPriceNum = parseFloat(limitPrice) || 0;
+  const limitShares = limitPriceNum > 0 ? (isLimitBuying ? amountNum / limitPriceNum : amountNum) : 0; 
+  const limitCost = isLimitBuying ? amountNum : (limitPriceNum * amountNum);
+  const limitPotentialReturn = isLimitBuying ? limitShares : (limitShares * limitPriceNum); 
+  const limitProfit = isLimitBuying ? (limitShares - limitCost) : (limitPriceNum * amountNum);
+  
+  const potentialReturn = tradeType === 'market' ? estShares : limitPotentialReturn;
+  const potentialProfit = tradeType === 'market' ? (estShares - amountNum) : limitProfit;
+
+  const handlePlaceOrder = async () => {
+    if (!isConnected) {
+      openConnectModal?.();
       return;
     }
-    toast.success(
-      `${t.markets.bet} ${activeTab.toUpperCase()} ${estShares.toFixed(1)} ${t.portfolio.positions || 'shares'} for $${amountNum.toFixed(2)} USDC ${t.common.on || 'on'} "${title}"`
-    );
-    setAmount('');
+
+    if (amountNum <= 0) {
+      toast.error(t.errors.invalidAmount || <AITranslatedText text="Please enter a valid amount" />);
+      return;
+    }
+    
+    try {
+      if (tradeType === 'market') {
+        const success = activeTab === 'yes' 
+          ? await buyYes(amount, minSharesOut) 
+          : await buyNo(amount, minSharesOut);
+          
+        if (success) {
+          toast.success(
+            <span><AITranslatedText text={t.markets.bet} /> {activeTab.toUpperCase()} {estShares.toFixed(1)} <AITranslatedText text={t.portfolio.positions || 'shares'} /> for ${amountNum.toFixed(2)} USDC</span>
+          );
+          setAmount('');
+        }
+      } else {
+        // Limit Order
+        const isBuying = isLimitBuying;
+        const isYes = activeTab === 'yes';
+        const success = await placeLimitOrder(amount, limitPrice, isYes, isBuying);
+        
+        if (success) {
+          toast.success(`Limit ${isBuying ? 'BUY' : 'SELL'} order placed at $${limitPrice}`);
+          setAmount('');
+        }
+      }
+    } catch (err) {
+      toast.error(<AITranslatedText text="Transaction failed" />);
+    }
   };
 
   return (
@@ -426,18 +498,18 @@ function TradingPanel({
       {/* Tab Header */}
       <div className="grid grid-cols-2">
         <button
-          onClick={() => setActiveTab('yes')}
-          className={`py-3.5 text-center font-bold text-sm transition-all duration-200 ${
+          onClick={() => { setActiveTab('yes'); setIsLimitBuying(true); }}
+          className={`py-3.5 text-center font-bold text-sm transition-all duration-200 border-r border-slate-700/50 ${
             activeTab === 'yes'
               ? 'bg-emerald-600 text-white shadow-inner'
               : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700/80 hover:text-slate-200'
           }`}
         >
           <TrendingUp className="w-4 h-4 inline mr-1.5 -mt-0.5" />
-          {t.betting.buy || 'Buy'} {t.betting.yes || 'Yes'} — {yesOdds}¢
+          {t.betting.yes || 'Yes'} {yesOdds}¢
         </button>
         <button
-          onClick={() => setActiveTab('no')}
+          onClick={() => { setActiveTab('no'); setIsLimitBuying(true); }}
           className={`py-3.5 text-center font-bold text-sm transition-all duration-200 ${
             activeTab === 'no'
               ? 'bg-red-600 text-white shadow-inner'
@@ -445,17 +517,56 @@ function TradingPanel({
           }`}
         >
           <TrendingDown className="w-4 h-4 inline mr-1.5 -mt-0.5" />
-          {t.betting.buy || 'Buy'} {t.betting.no || 'No'} — {noOdds}¢
+          {t.betting.no || 'No'} {noOdds}¢
+        </button>
+      </div>
+
+      {/* Trade Type Tabs */}
+      <div className="flex bg-slate-900/50 p-1 border-b border-slate-800">
+        <button 
+           onClick={() => setTradeType('market')}
+           className={`flex-1 py-1 px-2 rounded-md text-[10px] font-bold tracking-widest uppercase transition-all ${tradeType === 'market' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+        >
+           <AITranslatedText text="Market" />
+        </button>
+        <button 
+           onClick={() => setTradeType('limit')}
+           className={`flex-1 py-1 px-2 rounded-md text-[10px] font-bold tracking-widest uppercase transition-all ${tradeType === 'limit' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+        >
+           <AITranslatedText text="Limit" />
         </button>
       </div>
 
       {/* Trade Form */}
       <div className="p-5 space-y-4">
+        {/* Limit Order Sub-tabs */}
+        {tradeType === 'limit' && (
+           <div className="flex gap-2 mb-2 p-1 bg-slate-900/50 rounded-lg">
+              <button 
+                 onClick={() => setIsLimitBuying(true)}
+                 className={`flex-1 py-1.5 text-[10px] font-bold rounded-md transition-all ${isLimitBuying ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'text-slate-500'}`}
+              >
+                 <AITranslatedText text={`Buy ${activeTab.toUpperCase()}`} />
+              </button>
+              <button 
+                 onClick={() => setIsLimitBuying(false)}
+                 className={`flex-1 py-1.5 text-[10px] font-bold rounded-md transition-all ${!isLimitBuying ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'text-slate-500'}`}
+              >
+                 <AITranslatedText text={`Sell ${activeTab.toUpperCase()}`} />
+              </button>
+           </div>
+        )}
+
         {/* Amount Input */}
         <div>
-          <label className="text-xs font-medium text-slate-400 mb-1.5 block">
-            {t.betting.amount || 'Amount'} (USDC)
-          </label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="text-xs font-medium text-slate-400">
+              {tradeType === 'market' || isLimitBuying ? <span><AITranslatedText text={t.betting.amount || 'Amount'} /> (USDC)</span> : <AITranslatedText text="Amount (Shares)" />}
+            </label>
+            <button className="text-slate-600 hover:text-slate-400">
+               <HelpCircle className="w-3 h-3" />
+            </button>
+          </div>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">
               $
@@ -479,6 +590,47 @@ function TradingPanel({
                 className="flex-1 py-1.5 text-xs font-medium rounded-md bg-slate-700/50 text-slate-400 hover:bg-slate-600/50 hover:text-slate-200 transition-colors"
               >
                 ${val}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Price Input for Limit Order */}
+        {tradeType === 'limit' && (
+           <div>
+              <label className="text-xs font-medium text-slate-400 mb-1.5 block">
+                 <AITranslatedText text="Limit Price (USDC)" />
+              </label>
+              <div className="relative">
+                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">$</span>
+                 <input
+                    type="number"
+                    value={limitPrice}
+                    onChange={(e) => setLimitPrice(e.target.value)}
+                    placeholder="0.50"
+                    step="0.01"
+                    min="0.01"
+                    max="0.99"
+                    className="w-full bg-slate-900/80 border border-slate-700/50 rounded-lg py-3 pl-7 pr-4 text-white focus:ring-2 focus:ring-indigo-500/50 transition-all font-mono"
+                 />
+                 <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-500 tracking-tighter"><AITranslatedText text="PER SHARE" /></div>
+              </div>
+           </div>
+        )}
+
+        <div className="flex items-center justify-between px-1">
+          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+             <AITranslatedText text="Slippage Tolerance" />
+          </label>
+          <div className="flex gap-1.5">
+            {[0.5, 1, 3].map(s => (
+              <button 
+                key={s} 
+                type="button"
+                onClick={() => setSlippage(s)}
+                className={`text-[10px] px-2 py-0.5 rounded border transition-all ${slippage === s ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : 'bg-transparent text-slate-500 border-slate-800 hover:border-slate-700'}`}
+              >
+                {s}%
               </button>
             ))}
           </div>
@@ -515,22 +667,22 @@ function TradingPanel({
         {/* Place Order Button */}
         <Button
           onClick={handlePlaceOrder}
-          disabled={amountNum <= 0}
+          disabled={amountNum <= 0 || isTxLoading}
           className={`w-full py-6 text-lg font-bold transition-all duration-200 border-0 ${
             activeTab === 'yes'
               ? 'bg-emerald-600 hover:bg-emerald-500 text-white hover:shadow-lg hover:shadow-emerald-500/30 disabled:bg-emerald-600/30'
               : 'bg-red-600 hover:bg-red-500 text-white hover:shadow-lg hover:shadow-red-500/30 disabled:bg-red-600/30'
           }`}
         >
-          {amountNum > 0
-            ? `${t.betting.placeOrder || 'Place Order'} — ${t.betting.buy || 'Buy'} ${activeTab === 'yes' ? (t.betting.yes || 'Yes') : (t.betting.no || 'No')}`
-            : (t.betting.enterAmountToTrade || 'Enter Amount to Trade')}
+          {isTxLoading ? <AITranslatedText text="Confirming..." /> : amountNum > 0
+            ? <span><AITranslatedText text={t.betting.placeOrder || 'Place Order'} /> — <AITranslatedText text={`${t.betting.buy || 'Buy'} ${activeTab === 'yes' ? (t.betting.yes || 'Yes') : (t.betting.no || 'No')}`} /></span>
+            : <AITranslatedText text={t.betting.enterAmountToTrade || 'Enter Amount to Trade'} />}
         </Button>
 
         <div className="flex items-start gap-2 text-xs text-slate-500">
           <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
           <span>
-            {t.betting.connectWalletInfo || 'Connect your wallet to place real bets. Each share pays $1.00 if the outcome is correct.'}
+            <AITranslatedText text={t.betting.connectWalletInfo || 'Connect your wallet to place real bets. Each share pays $1.00 if the outcome is correct.'} />
           </span>
         </div>
       </div>
@@ -540,6 +692,8 @@ function TradingPanel({
 
 // ─── Market Detail Page ────────────────────────────────────────────────
 export default function MarketDetail() {
+  const { address: userAddress, isConnected } = useAccount();
+  const { openConnectModal } = useConnectModal();
   const { language } = useLanguageContext();
   const t_i18n = (messages as Record<string, any>)[language] || messages.en;
   const [, params] = useRoute('/markets/:id');
@@ -579,11 +733,37 @@ export default function MarketDetail() {
   const market = isMock ? mockData : (marketId.startsWith('wc-') ? wcMarket : apiMarket);
 
   // Generate mock price history based on current odds
+  const { data: historyData, isLoading: isHistoryLoading } = trpc.markets.priceHistory.useQuery(
+    { marketId: String(marketId) },
+    { enabled: !isMock, staleTime: 30000 }
+  );
+
+  // Use real history if available, else mock
   const priceHistory = useMemo(() => {
-    if (!market) return [];
-    const days = chartRange === '7d' ? 7 : chartRange === '30d' ? 30 : 90;
-    return generatePriceHistory(market.yesOdds, days);
-  }, [market?.yesOdds, chartRange]);
+    if (isMock || !historyData || historyData.length === 0) {
+      const days = chartRange === '7d' ? 7 : chartRange === '30d' ? 30 : 90;
+      return generatePriceHistory(market?.yesOdds || 50, days);
+    }
+    return historyData.map(h => ({
+      date: new Date(h.timestamp * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      yes: Math.round(h.priceYes * 100),
+      no: Math.round(h.priceNo * 100),
+    }));
+  }, [market?.yesOdds, chartRange, historyData, isMock]);
+
+  const [isCopied, setIsCopied] = useState(false);
+  const [tradeType, setTradeType] = useState<'market' | 'limit'>('market');
+  const [limitPrice, setLimitPrice] = useState('0.5');
+  const [isLimitBuying, setIsLimitBuying] = useState(true);
+  
+  const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}?ref=${userAddress || ''}` : '';
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(shareUrl);
+    setIsCopied(true);
+    toast.success(<AITranslatedText text="Referral link copied!" />);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
 
   const isLoading = isMock ? false : (marketId.startsWith('wc-') ? isWCLoading : isApiLoading);
   if (isLoading) return <DetailSkeleton />;
@@ -667,8 +847,104 @@ export default function MarketDetail() {
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Right Column: Position Manager & Trading (Mobile First order shifted via CSS or just placement) */}
+          <div className="lg:col-span-1 lg:order-2 space-y-6">
+            {!isMock && <PositionManager marketAddress={(market as any).address || marketId} />}
+            
+            {/* Share & Earn Card */}
+            {!isMock && (
+              <Card className="p-5 bg-gradient-to-br from-indigo-600/20 to-purple-600/10 border-indigo-500/30 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-2 opacity-20 group-hover:opacity-40 transition-opacity">
+                  <Share2 className="w-12 h-12 text-indigo-400 rotate-12" />
+                </div>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-bold text-indigo-300 flex items-center gap-2">
+                    <Flame className="w-4 h-4 text-orange-400" />
+                    <AITranslatedText text="Share & Earn 50% Fees" />
+                  </h3>
+                  <HelpCircle className="w-3.5 h-3.5 text-indigo-500/50 cursor-pointer hover:text-indigo-400" />
+                </div>
+                
+                <div className="text-xs text-slate-400 mb-4 leading-relaxed">
+                  <AITranslatedText text="Invite friends to this market and earn 50% of the protocol fees from every trade they make." />
+                </div>
+                
+                <div className="flex gap-2">
+                  <div className={`flex-1 bg-slate-950/50 rounded-lg px-3 py-2 border border-slate-800 text-[10px] text-slate-500 font-mono truncate items-center flex ${!isConnected && 'blur-[2px]'}`}>
+                    {isConnected ? shareUrl : 'https://nexus.market/m/77?ref=CONNECT_TO_ACTIVATE'}
+                  </div>
+                  <Button 
+                    size="sm" 
+                    onClick={isConnected ? handleCopyLink : openConnectModal}
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white border-0 px-3 min-w-[36px]"
+                  >
+                    {!isConnected ? <Users className="w-4 h-4" /> : isCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  </Button>
+                </div>
+                {!isConnected && (
+                  <p className="text-[9px] text-indigo-400/60 mt-2 text-center font-bold tracking-widest uppercase">
+                    <AITranslatedText text="Connect wallet to activate your referral link" />
+                  </p>
+                )}
+              </Card>
+            )}
+
+            {/* Professional Order Book Display */}
+            {!isMock && (
+              <Card className="bg-slate-950/80 border-slate-800 overflow-hidden">
+                <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <History className="w-3 h-3 text-cyan-400" />
+                    <AITranslatedText text="Market Order Book" />
+                  </h3>
+                  <Badge variant="outline" className="text-[9px] border-slate-700 text-slate-500"><AITranslatedText text="REALTIME" /></Badge>
+                </div>
+                <div className="p-0">
+                  <div className="grid grid-cols-3 text-[10px] text-slate-500 font-bold bg-slate-900/50 px-4 py-2 uppercase tracking-tighter border-b border-slate-800/30">
+                     <span><AITranslatedText text="Price (USDC)" /></span>
+                     <span className="text-right"><AITranslatedText text="Size (Shares)" /></span>
+                     <span className="text-right"><AITranslatedText text="Total (USDC)" /></span>
+                  </div>
+                  
+                  {/* Mock Bids/Asks if none in list, but let's try to render real ones if available */}
+                  <div className="divide-y divide-slate-800/20">
+                    {/* Bids (Buying YES) - Shown in Green */}
+                    {(market as any).orders?.filter((o: any) => o.status === 'OPEN' && o.isBuying && o.isYes).map((order: any) => (
+                      <div key={order.id} className="grid grid-cols-3 px-4 py-1.5 text-xs hover:bg-green-500/5 transition-colors cursor-pointer group">
+                        <span className="text-green-400 font-bold">{(order.price / 1e6).toFixed(2)}</span>
+                        <span className="text-right text-slate-300">{(order.remaining / 1e6).toLocaleString()}</span>
+                        <span className="text-right text-slate-500 group-hover:text-white transition-colors">{(order.remaining * order.price / 1e12).toFixed(1)}</span>
+                      </div>
+                    ))}
+                    {/* Placeholder Bids if empty */}
+                    {!(market as any).orders?.length && [0.48, 0.45, 0.42].map(p => (
+                      <div key={p} className="grid grid-cols-3 px-4 py-1.5 text-xs opacity-40 grayscale group hover:grayscale-0 transition-all">
+                        <span className="text-emerald-500/80 font-mono">{p.toFixed(2)}</span>
+                        <span className="text-right text-slate-600">{(p * 1000).toFixed(0)}</span>
+                        <span className="text-right text-slate-700">{(p * 1000 * p).toFixed(1)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Card>
+            )}
+
+            <TradingPanel 
+              marketAddress={(market as any).address || marketId} 
+              yesOdds={market.yesOdds} 
+              noOdds={market.noOdds} 
+              title={market.title} 
+              tradeType={tradeType}
+              setTradeType={setTradeType}
+              limitPrice={limitPrice}
+              setLimitPrice={setLimitPrice}
+              isLimitBuying={isLimitBuying}
+              setIsLimitBuying={setIsLimitBuying}
+            />
+          </div>
+
           {/* Left Column: Chart & Details */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 lg:order-1 space-y-6">
             {/* Price History Chart */}
             <div className="rounded-xl bg-slate-800/60 border border-slate-700/50 p-6">
               <div className="flex items-center justify-between mb-4">
@@ -955,7 +1231,7 @@ export default function MarketDetail() {
                   </div>
                 ) : (
                   <div className="text-center py-6 text-slate-500">
-                    Prediction data currently unavailable.
+                    <AITranslatedText text="Prediction data currently unavailable." />
                   </div>
                 )}
               </div>
@@ -981,61 +1257,7 @@ export default function MarketDetail() {
             )}
           </div>
 
-          {/* Right Column: Trade Panel (Sticky) */}
-          <div className="space-y-6">
-            <div className="lg:sticky lg:top-20 space-y-6">
-              {/* Trading Panel */}
-              <TradingPanel
-                yesOdds={market.yesOdds}
-                noOdds={market.noOdds}
-                title={market.title}
-              />
-
-              {/* Market Info Card */}
-              <div className="rounded-xl bg-slate-800/60 border border-slate-700/50 p-6">
-                <h3 className="text-sm font-semibold text-slate-400 mb-3">Market Info</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">{t_i18n.common.status || 'Status'}</span>
-                    <span className={market.isActive ? 'text-emerald-400' : 'text-slate-400'}>
-                      {market.isActive ? (t_i18n.markets.active || 'Active') : market.isClosed ? (t_i18n.markets.closed || 'Closed') : 'Inactive'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">{t_i18n.common.createdAt || 'Created'}</span>
-                    <span className="text-slate-300">
-                      {market.startDate ? formatDate(market.startDate) : 'N/A'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">{t_i18n.markets.endDate || 'End Date'}</span>
-                    <span className="text-slate-300">{formatDate(market.endDate)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">Monthly Vol</span>
-                    <span className="text-slate-300">{formatPool(market.volume1mo)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">{t_i18n.markets.subMarkets || 'Sub-Markets'}</span>
-                    <span className="text-slate-300">{market.subMarkets?.length || 1}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* External Link */}
-              {market.polymarketUrl && (
-                <a
-                  href={market.polymarketUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-slate-800/40 border border-slate-700/50 text-sm text-slate-400 hover:text-cyan-400 hover:border-cyan-500/30 transition-all duration-200"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  View on Polymarket
-                </a>
-              )}
-            </div>
-          </div>
+          {/* Redundant col removed */}
         </div>
 
         {/* Back Button */}

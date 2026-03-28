@@ -4,7 +4,7 @@ import { useAITranslation } from '@/hooks/useAITranslation';
 interface AITranslatedTextProps {
   text: string | undefined;
   className?: string;
-  as?: 'span' | 'p' | 'h1' | 'h2' | 'h3' | 'h4' | 'div';
+  as?: 'span' | 'p' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'div' | 'label';
 }
 
 /**
