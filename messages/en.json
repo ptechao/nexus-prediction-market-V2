@@ -144,6 +144,12 @@
     "activeMarkets": "Active Markets",
     "hotMarkets": "Hot Markets",
     "live": "Live",
-    "offline": "Offline"
+    "offline": "Offline",
+    "slide2Title": "Global Elections & Politics",
+    "slide2Highlight": "Who will lead?",
+    "slide2Desc": "Trade on political outcomes with the deepest liquidity and instant on-chain settlement guarantees.",
+    "slide3Title": "Major League Sports",
+    "slide3Highlight": "Back your teams",
+    "slide3Desc": "Sports predictions powered by our proprietary AI model. Get the edge before the whistle blows."
   }
 }

@@ -48,17 +48,19 @@ export function useMarketsWithPolymarket(options: UseMarketsWithPolymarketOption
             id: m.sourceId,
             title: m.title,
             description: m.description || '',
-            category: (m.category as any) || 'other',
-            endDate: new Date(m.endTime),
-            poolSize: parseFloat(m.yesPool || '0') + parseFloat(m.noPool || '0'),
+            category: (m.category || 'other') as any,
+            endDate: m.endTime ? new Date(m.endTime) : new Date(),
+            poolSize: parseFloat((m as any).yesPool || '0') + parseFloat((m as any).noPool || '0'),
             yesOdds: parseInt(m.yesOdds || '50'),
             noOdds: parseInt(m.noOdds || '50'),
             volume24h: 1000, // Placeholder
             participants: 100, // Placeholder
             status: 'active',
             icon: '📊',
-            source: 'polymarket' as any, // Reuse type for simplicity
-          }));
+            source: 'polymarket' as any,
+            yesPool: parseFloat((m as any).yesPool || '0'),
+            noPool: parseFloat((m as any).noPool || '0'),
+          } as any));
           setDataSource('nexus');
         }
       } else if (source === 'polymarket' || source === 'auto') {
@@ -69,9 +71,9 @@ export function useMarketsWithPolymarket(options: UseMarketsWithPolymarketOption
               id: m.sourceId,
               title: m.title,
               description: m.description || '',
-              category: (m.category as any) || 'other',
-              endDate: new Date(m.endTime),
-              poolSize: 10000, 
+              category: (m.category || 'other') as any,
+              endDate: m.endTime ? new Date(m.endTime) : new Date(),
+              poolSize: parseFloat((m as any).yesPool || '0') + parseFloat((m as any).noPool || '0'), 
               yesOdds: parseInt(m.yesOdds || '50'),
               noOdds: parseInt(m.noOdds || '50'),
               volume24h: 1000,
@@ -79,7 +81,9 @@ export function useMarketsWithPolymarket(options: UseMarketsWithPolymarketOption
               status: 'active',
               icon: '📊',
               source: 'polymarket' as any,
-            }));
+              yesPool: parseFloat((m as any).yesPool || '0'),
+              noPool: parseFloat((m as any).noPool || '0'),
+            } as any));
             setDataSource('nexus');
           } 
           

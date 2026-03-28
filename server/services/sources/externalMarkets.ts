@@ -108,7 +108,7 @@ export async function fetchPredictItMarkets(): Promise<GenericMarketSeed[]> {
 export async function fetchManifoldMarkets(): Promise<GenericMarketSeed[]> {
   try {
     const response = await axios.get("https://api.manifold.markets/v0/markets", {
-      params: { limit: 20 },
+      params: { limit: 100 },
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "application/json"
@@ -122,7 +122,7 @@ export async function fetchManifoldMarkets(): Promise<GenericMarketSeed[]> {
       sourceId: m.id,
       title: m.question,
       description: typeof m.description === "string" ? m.description : (m.description?.content?.[0]?.content?.[0]?.text || ""),
-      category: mapManifoldCategory(m.groupSlugs),
+      category: mapManifoldCategory(m.groupSlugs, m.question),
       eventType: "social",
       startTime: new Date(m.createdTime).toISOString(),
       endTime: new Date(m.closeTime || Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
@@ -137,12 +137,13 @@ export async function fetchManifoldMarkets(): Promise<GenericMarketSeed[]> {
   }
 }
 
-function mapManifoldCategory(slugs: string[] = []): string {
-  if (!slugs || slugs.length === 0) return "other";
-  const s = slugs.join(" ").toLowerCase();
-  if (s.includes("politics") || s.includes("election")) return "politics";
-  if (s.includes("sports") || s.includes("nfl") || s.includes("nba")) return "sports";
-  if (s.includes("crypto") || s.includes("bitcoin") || s.includes("eth")) return "crypto";
-  if (s.includes("entertainment") || s.includes("movies") || s.includes("tv")) return "entertainment";
+function mapManifoldCategory(slugs: string[] = [], title: string = ""): string {
+  const s = ((slugs || []).join(" ") + " " + (title || "")).toLowerCase();
+  
+  if (s.includes("politics") || s.includes("election") || s.includes("usa") || s.includes("trump") || s.includes("biden") || s.includes("johnson") || s.includes("duma")) return "politics";
+  if (s.includes("sports") || s.includes("nfl") || s.includes("nba") || s.includes("soccer") || s.includes("football") || s.includes("mlb") || s.includes("gaa")) return "sports";
+  if (s.includes("crypto") || s.includes("bitcoin") || s.includes("eth") || s.includes("btc") || s.includes("finance") || s.includes("business") || s.includes("coin")) return "crypto";
+  if (s.includes("entertainment") || s.includes("movies") || s.includes("tv") || s.includes("gaming") || s.includes("celebrity") || s.includes("hermano")) return "entertainment";
+  if (s.includes("tech") || s.includes("ai") || s.includes("science")) return "other";
   return "other";
 }

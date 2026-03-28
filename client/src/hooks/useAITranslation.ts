@@ -25,7 +25,6 @@ export function useAITranslation(text: string | undefined) {
     // Trigger translation
     const performTranslation = async () => {
       try {
-        setTranslatedText(undefined); // Clear old translation while fetching
         const result = await translationMutation.mutateAsync({
           text: text!,
           targetLang: language,

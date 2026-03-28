@@ -1,31 +1,22 @@
-import { eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
+import { createClient } from "@libsql/client";
+import { drizzle } from "drizzle-orm/libsql";
 import { InsertUser, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
-import mysql from "mysql2/promise";
-
 let _db: ReturnType<typeof drizzle> | null = null;
-let _pool: mysql.Pool | null = null;
+let _client: ReturnType<typeof createClient> | null = null;
 
 // Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      if (!_pool) {
-        console.log("[Database] Initializing connection pool...");
-        _pool = mysql.createPool({
-          uri: process.env.DATABASE_URL,
-          waitForConnections: true,
-          connectionLimit: 10,
-          maxIdle: 10,
-          idleTimeout: 60000,
-          queueLimit: 0,
-          enableKeepAlive: true,
-          keepAliveInitialDelay: 0,
+      if (!_client) {
+        console.log("[Database] Initializing LibSQL (SQLite) connection...");
+        _client = createClient({
+          url: "file:" + (process.env.DATABASE_URL.startsWith("file:") ? process.env.DATABASE_URL.slice(5) : process.env.DATABASE_URL),
         });
       }
-      _db = drizzle(_pool);
+      _db = drizzle(_client);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
@@ -77,14 +68,16 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     }
 
     if (!values.lastSignedIn) {
-      values.lastSignedIn = new Date();
+      values.lastSignedIn = new Date().toISOString();
     }
 
     if (Object.keys(updateSet).length === 0) {
-      updateSet.lastSignedIn = new Date();
+      updateSet.lastSignedIn = new Date().toISOString();
     }
 
-    await db.insert(users).values(values).onDuplicateKeyUpdate({
+    // LibSQL / SQLite uses onConflictDoUpdate
+    await db.insert(users).values(values).onConflictDoUpdate({
+      target: users.openId,
       set: updateSet,
     });
   } catch (error) {
@@ -94,15 +87,13 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 }
 
 export async function getUserByOpenId(openId: string) {
+  const { eq } = await import("drizzle-orm");
   const db = await getDb();
   if (!db) {
     console.warn("[Database] Cannot get user: database not available");
     return undefined;
   }
 
-  const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
-
+  const result = await db.select().from(users).where(eq(users.openId, openId));
   return result.length > 0 ? result[0] : undefined;
 }
-
-// TODO: add feature queries here as your schema grows.

@@ -27,11 +27,11 @@ function MarketCard({ market, isLiveData }: { market: any; isLiveData: boolean }
       return;
     }
 
-    // Live data - show demo mode message
+    // Live data - show wallet warning
     setIsBetting(true);
-    toast.info(
-      `Demo Mode: This market is from Polymarket. To trade, visit polymarket.com`,
-      { duration: 4000 }
+    toast.error(
+      `Please connect your wallet to place a trade on this live market.`,
+      { duration: 3000 }
     );
     setTimeout(() => setIsBetting(false), 2000);
   };
@@ -45,11 +45,7 @@ function MarketCard({ market, isLiveData }: { market: any; isLiveData: boolean }
           <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-medium bg-secondary text-secondary-foreground">
             {market.category || 'Market'}
           </span>
-          {market.source === 'polymarket' && (
-            <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-medium bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300">
-              Live
-            </span>
-          )}
+
         </div>
         <div className="text-right">
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Pool Size</p>
@@ -149,24 +145,9 @@ export default function MarketsPageWithPolymarket() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Prediction Markets</h1>
           <p className="text-muted-foreground">
-            {isLiveData ? '📊 Live data from Polymarket' : '📋 Mock market data for demo'}
+            {isLiveData ? '📊 Discover live on-chain markets' : '📋 Local network markets'}
           </p>
         </div>
-
-        {/* Data Source Alert */}
-        {isLiveData && (
-          <Card className="mb-6 border-purple-200 bg-purple-50 p-4">
-            <div className="flex items-start gap-3">
-              <TrendingUp className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-sm font-semibold text-purple-900">Live Data from Polymarket</p>
-                <p className="text-sm text-purple-800 mt-1">
-                  These markets are sourced from Polymarket's Gamma API. Click "Bet" to see demo mode information.
-                </p>
-              </div>
-            </div>
-          </Card>
-        )}
 
         {/* Error Alert */}
         {error && (

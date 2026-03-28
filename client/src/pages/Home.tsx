@@ -13,6 +13,10 @@ import {
 import { trpc } from '@/lib/trpc';
 import { MarketCard, MarketCardSkeleton, formatPool, type Market } from '@/components/MarketCard';
 import { useTranslation } from '@/hooks/useTranslation';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from '@/components/ui/carousel';
+import Autoplay from 'embla-carousel-autoplay';
+import { useRef, useState, useEffect, useMemo } from 'react';
+import { cn } from '@/lib/utils';
 
 // ─── Fallback Mock Data (shown when API is unavailable) ────────────────
 const FALLBACK_MARKETS: Market[] = [
@@ -81,55 +85,171 @@ export default function Home() {
   const totalVolume = markets.reduce((sum, m) => sum + m.totalPool, 0);
   const totalTraders = markets.reduce((sum, m) => sum + m.participants, 0);
 
+  const [api, setApi] = useState<CarouselApi>();
+  const [current, setCurrent] = useState(0);
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    if (!api) return;
+    setCount(api.scrollSnapList().length);
+    setCurrent(api.selectedScrollSnap());
+
+    api.on('select', () => {
+      setCurrent(api.selectedScrollSnap());
+    });
+  }, [api]);
+
+  // Set up carousel autoplay plugin
+  const plugin = useRef(
+    Autoplay({ delay: 5000, stopOnInteraction: true })
+  );
+
+  const HERO_SLIDES = useMemo(() => {
+    const s1Title = t('home.heroTitle1');
+    const s1Highlight = t('home.heroTitle2');
+    const s1Desc = t('home.heroSubtitle');
+    
+    const s2Title = t('home.slide2Title');
+    const s2Highlight = t('home.slide2Highlight');
+    const s2Desc = t('home.slide2Desc');
+    
+    const s3Title = t('home.slide3Title');
+    const s3Highlight = t('home.slide3Highlight');
+    const s3Desc = t('home.slide3Desc');
+
+    return [
+      {
+        id: 1,
+        title: s1Title.startsWith('home.') ? 'Predict the Future' : s1Title,
+        highlight: s1Highlight.startsWith('home.') ? 'Trade with Confidence' : s1Highlight,
+        desc: s1Desc.startsWith('home.') ? 'Join NEXUS — the decentralized prediction market platform. Experience the power of decentralized predictions with AI-driven insights.' : s1Desc,
+        image: 'https://images.unsplash.com/photo-1640340434855-6084b1f4901c?q=80&w=1920&auto=format&fit=crop',
+      },
+      {
+        id: 2,
+        title: s2Title.startsWith('home.') ? 'Global Elections & Politics' : s2Title,
+        highlight: s2Highlight.startsWith('home.') ? 'Who will lead?' : s2Highlight,
+        desc: s2Desc.startsWith('home.') ? 'Trade on political outcomes with the deepest liquidity and instant on-chain settlement guarantees.' : s2Desc,
+        image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?q=80&w=1920&auto=format&fit=crop',
+      },
+      {
+        id: 3,
+        title: s3Title.startsWith('home.') ? 'Major League Sports' : s3Title,
+        highlight: s3Highlight.startsWith('home.') ? 'Back your teams' : s3Highlight,
+        desc: s3Desc.startsWith('home.') ? 'Sports predictions powered by our proprietary AI model. Get the edge before the whistle blows.' : s3Desc,
+        image: 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=1920&auto=format&fit=crop',
+      }
+    ];
+  }, [t]);
+
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Hero */}
-      <section className="relative py-16 sm:py-24 px-4 sm:px-6 lg:px-8 overflow-hidden border-b border-border bg-card">
-        <div className="relative max-w-5xl mx-auto text-center">
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight mb-6 text-foreground">
-            {t('home.heroTitle1') || 'Predict the Future,'}{' '}
-            <span className="text-primary">
-              {t('home.heroTitle2') || 'Trade with Confidence'}
-            </span>
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-10">
-            {t('home.heroSubtitle') || 'Join NEXUS — the decentralized prediction market platform. Experience the power of decentralized predictions with AI-driven insights.'}
-          </p>
+      <section className="relative w-full border-b border-border bg-slate-950 overflow-hidden group">
+        <Carousel
+          plugins={[plugin.current]}
+          setApi={setApi}
+          className="w-full"
+          onMouseEnter={() => plugin.current.stop()}
+          onMouseLeave={() => plugin.current.reset()}
+          opts={{ 
+            loop: true,
+            align: "start",
+          }}
+        >
+          <CarouselContent>
+            {HERO_SLIDES.map((slide) => (
+              <CarouselItem key={slide.id}>
+                <div className="relative w-full h-[450px] sm:h-[500px] lg:h-[600px] flex items-center justify-center">
+                  {/* Background Image with Overlay */}
+                  <div 
+                    className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat transition-transform duration-10000 hover:scale-105"
+                    style={{ backgroundImage: `url('${slide.image}')` }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/40" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent" />
+                  </div>
 
-          {/* Stats */}
-          <div className="flex justify-center gap-8 sm:gap-16 mb-6">
-            <div className="flex flex-col items-center">
-              <div className="text-3xl font-bold text-foreground mb-1">
-                {formatPool(totalVolume)}
-              </div>
-              <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t('home.totalVolume') || 'Total Volume'}</p>
+                  {/* Slide Content */}
+                  <div className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center md:text-left flex flex-col justify-center translate-y-4">
+                    <h1 className="text-3xl sm:text-5xl lg:text-7xl font-extrabold tracking-tight leading-tight mb-4 sm:mb-6 text-white drop-shadow-lg">
+                      {slide.title}{' '}
+                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 whitespace-nowrap block md:inline mt-2 md:mt-0">
+                        {slide.highlight}
+                      </span>
+                    </h1>
+                    <p className="text-base sm:text-lg lg:text-xl text-slate-300 max-w-2xl mx-auto md:mx-0 mb-8 sm:mb-10 drop-shadow-md font-medium leading-relaxed">
+                      {slide.desc}
+                    </p>
+                    
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+                      <Link href="/markets">
+                        <Button size="lg" className="w-full sm:w-auto bg-cyan-500 hover:bg-cyan-400 text-black font-bold border-none shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all">
+                          {t('home.startPredicting') || 'Explore Markets'}
+                          <ArrowRight className="w-5 h-5 ml-2" />
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          
+          {/* Navigation Buttons */}
+          <div className="hidden md:block">
+            <CarouselPrevious className="left-4 lg:left-8 bg-black/40 hover:bg-black/60 text-white border-white/20 w-12 h-12" />
+            <CarouselNext className="right-4 lg:right-8 bg-black/40 hover:bg-black/60 text-white border-white/20 w-12 h-12" />
+          </div>
+
+          {/* Pagination Dots */}
+          <div className="absolute bottom-24 left-0 right-0 z-30 flex justify-center gap-2 pointer-events-none">
+            {Array.from({ length: count }).map((_, index) => (
+              <button
+                key={index}
+                className={cn(
+                  "w-2 h-2 rounded-full transition-all duration-300 pointer-events-auto",
+                  current === index 
+                    ? "bg-cyan-400 w-8" 
+                    : "bg-white/30 hover:bg-white/50"
+                )}
+                onClick={() => api?.scrollTo(index)}
+                aria-label={`Go to slide ${index + 1}`}
+              />
+            ))}
+          </div>
+        </Carousel>
+
+        {/* Global Stats Overlay Strip */}
+        <div className="absolute bottom-0 left-0 right-0 z-20 bg-black/60 backdrop-blur-md border-t border-white/10 hidden sm:block">
+          <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center text-white">
+            <div className="flex flex-col">
+              <span className="text-xs text-slate-400 uppercase tracking-widest mb-1">{t('home.totalVolume') || 'Total Volume'}</span>
+              <span className="font-mono text-xl font-bold text-cyan-400">{formatPool(totalVolume)}</span>
             </div>
-            <div className="w-px h-12 bg-border hidden sm:block"></div>
+            <div className="w-px h-8 bg-white/20"></div>
             <div className="flex flex-col items-center">
-              <div className="text-3xl font-bold text-foreground mb-1">
-                {markets.length.toLocaleString()}
-              </div>
-              <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t('home.activeMarkets') || 'Active Markets'}</p>
+              <span className="text-xs text-slate-400 uppercase tracking-widest mb-1">{t('home.activeMarkets') || 'Active Markets'}</span>
+              <span className="font-mono text-xl font-bold">{markets.length.toLocaleString()}</span>
             </div>
-            <div className="w-px h-12 bg-border hidden sm:block"></div>
-            <div className="flex flex-col items-center">
-              <div className="text-3xl font-bold text-foreground mb-1">
+            <div className="w-px h-8 bg-white/20"></div>
+            <div className="flex flex-col items-end">
+              <span className="text-xs text-slate-400 uppercase tracking-widest mb-1">{t('home.traders') || 'Traders'}</span>
+              <span className="font-mono text-xl font-bold text-emerald-400">
                 {totalTraders >= 1_000_000
                   ? `${(totalTraders / 1_000_000).toFixed(1)}M`
                   : totalTraders >= 1_000
                     ? `${(totalTraders / 1_000).toFixed(1)}K`
                     : totalTraders.toLocaleString()}
-              </div>
-              <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t('home.traders') || 'Traders'}</p>
+              </span>
             </div>
           </div>
         </div>
       </section>
 
       {/* ── Hot Markets ── */}
-      <section className="px-4 sm:px-6 lg:px-8 py-16">
+      <section className="px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center justify-between mb-6 sm:mb-8">
             <div className="flex items-center gap-3">
               <Flame className="w-6 h-6 text-orange-500" />
               <h2 className="text-2xl font-bold text-foreground">{t('home.hotMarkets') || 'Trending Markets'}</h2>
@@ -157,7 +277,7 @@ export default function Home() {
 
           {/* Market Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {isLoading
+            {isLoading && (!markets || markets.length === 0) // Only show skeletons if no data is available
               ? Array.from({ length: 3 }).map((_, i) => (
                   <MarketCardSkeleton key={`skel-${i}`} />
                 ))
@@ -268,7 +388,7 @@ function WorldCupPreview() {
     staleTime: 300_000,
   });
 
-  if (isLoading) {
+  if (isLoading && !wcMarkets) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {Array.from({ length: 3 }).map((_, i) => (

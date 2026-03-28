@@ -12,15 +12,38 @@ import { useLanguageContext } from '@/contexts/LanguageContext';
 import messages from '../../../messages';
 import { toast } from 'sonner';
 
-type CategoryFilter = 'all' | 'sports' | 'politics' | 'crypto' | 'entertainment' | 'other';
+type CategoryFilter = 'all' | 'world cup' | 'sports' | 'politics' | 'crypto' | 'entertainment' | 'other';
 
 export default function Markets() {
   const { language } = useLanguageContext();
   const t_i18n = (messages as Record<string, any>)[language] || messages.en;
   
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>('all');
+  const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const cat = params.get('category')?.toLowerCase();
+      if (['all', 'world cup', 'sports', 'politics', 'crypto', 'entertainment', 'other'].includes(cat || '')) {
+        return cat as CategoryFilter;
+      }
+    }
+    return 'all';
+  });
   const [sortBy, setSortBy] = useState<'volume' | 'participants' | 'endDate'>('volume');
+
+  // Update URL silently when category changes
+  const handleCategoryChange = (val: CategoryFilter) => {
+    setSelectedCategory(val);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (val === 'all') {
+        url.searchParams.delete('category');
+      } else {
+        url.searchParams.set('category', val);
+      }
+      window.history.replaceState({}, '', url.toString());
+    }
+  };
 
   // Sync Mutation
   const syncMutation = trpc.markets.sync.useMutation({
@@ -41,17 +64,7 @@ export default function Markets() {
     isFetching: isNexusFetching
   } = trpc.markets.nexus.useQuery(
     { category: selectedCategory },
-    { staleTime: 60_000 }
-  );
-
-  // Fetch Live markets (API Proxy fallback)
-  const {
-    data: liveMarkets,
-    isLoading: isLiveLoading,
-    isFetching: isLiveFetching
-  } = trpc.markets.live.useQuery(
-    { category: selectedCategory },
-    { staleTime: 120_000 }
+    { staleTime: 15_000, refetchInterval: 15_000 } // Poll every 15s to grab newest synced events from DB!
   );
 
   // Fetch World Cup markets as secondary
@@ -59,10 +72,10 @@ export default function Markets() {
     data: worldCupMarkets, 
     isLoading: isWCLoading,
     isFetching: isWCFetching
-  } = trpc.markets.worldCup.useQuery(undefined, { staleTime: 300_000 });
+  } = trpc.markets.worldCup.useQuery(undefined, { staleTime: 60_000, refetchInterval: 60_000 });
 
-  const isLoading = isNexusLoading || isWCLoading || isLiveLoading;
-  const isFetching = isNexusFetching || isWCFetching || isLiveFetching;
+  const isLoading = isNexusLoading || isWCLoading;
+  const isFetching = isNexusFetching || isWCFetching;
 
   // Combine and map markets
   const allMarkets = useMemo(() => {
@@ -71,26 +84,19 @@ export default function Markets() {
     // Process Nexus Markets (from DB)
     if (nexusMarkets) {
       combined.push(...nexusMarkets.map(m => ({
-        id: m.sourceId || m.id,
+        id: String(m.sourceId || m.id),
         title: m.title,
         description: m.description || '',
         category: m.category || 'other',
-        endDate: m.endTime || m.endDate,
+        endDate: m.endTime ? new Date(m.endTime).toISOString() : ((m as any).endDate ? new Date((m as any).endDate).toISOString() : new Date().toISOString()),
         yesOdds: parseInt(String(m.yesOdds || '50')),
         noOdds: parseInt(String(m.noOdds || '50')),
-        totalPool: parseFloat(String(m.yesPool || '500')) + parseFloat(String(m.noPool || '500')),
+        totalPool: parseFloat(String((m as any).yesPool || '500')) + parseFloat(String((m as any).noPool || '500')),
         volume24h: 1000,
         participants: 100,
         isTrending: false,
         image: m.image
       })));
-    }
-
-    // Process Live Markets (direct from APIs)
-    if (liveMarkets) {
-      // Avoid duplication by sourceId
-      const existingIds = new Set(combined.map(m => String(m.id)));
-      combined.push(...liveMarkets.filter(m => !existingIds.has(String(m.id))));
     }
 
     // Process World Cup Markets
@@ -99,7 +105,7 @@ export default function Markets() {
     }
 
     return combined;
-  }, [nexusMarkets, liveMarkets, worldCupMarkets]);
+  }, [nexusMarkets, worldCupMarkets]);
 
   // Search & Filter Logic
   const filteredMarkets = useMemo(() => {
@@ -114,9 +120,33 @@ export default function Markets() {
       );
     }
 
-    // Category Filter
+    // Advanced Category Mapping & Filter Logic
     if (selectedCategory !== 'all') {
-      result = result.filter(m => (m.category || '').toLowerCase() === selectedCategory.toLowerCase());
+      result = result.filter(m => {
+        const cat = (m.category || '').toLowerCase();
+        const title = (m.title || '').toLowerCase();
+        const filterStr = selectedCategory.toLowerCase();
+
+        // 1. Direct match (e.g. 'politics' === 'politics')
+        if (cat === filterStr) return true;
+
+        // 2. Specific mapping for 'sports' (Map Soccer, Football, NBA etc. to Sports)
+        if (filterStr === 'sports') {
+          return ['soccer', 'football', 'nba', 'sports', 'stadium', 'match'].some(kw => cat.includes(kw));
+        }
+
+        // 3. Mapping for 'world cup'
+        if (filterStr === 'world cup') {
+          return cat.includes('world cup') || cat.includes('soccer') || title.includes('world cup');
+        }
+
+        // 4. Mapping for 'crypto'
+        if (filterStr === 'crypto') {
+          return ['crypto', 'bitcoin', 'btc', 'eth', 'token', 'coin', 'blockchain'].some(kw => cat.includes(kw));
+        }
+
+        return false;
+      });
     }
 
     // Sort
@@ -132,6 +162,7 @@ export default function Markets() {
 
   const categories: { value: CategoryFilter; label: string }[] = [
     { value: 'all', label: t_i18n.navigation.markets || 'All Markets' },
+    { value: 'world cup', label: t_i18n.markets?.worldCup || 'World Cup' },
     { value: 'sports', label: t_i18n.markets?.sports || 'Sports' },
     { value: 'politics', label: t_i18n.markets?.politics || 'Politics' },
     { value: 'crypto', label: t_i18n.markets?.crypto || 'Crypto' },
@@ -230,7 +261,7 @@ export default function Markets() {
                     ? 'bg-primary text-primary-foreground border-primary' 
                     : 'bg-card text-muted-foreground hover:bg-muted border-border'
                 }`}
-                onClick={() => setSelectedCategory(cat.value)}
+                onClick={() => handleCategoryChange(cat.value)}
               >
                 {cat.label}
               </Badge>
@@ -262,9 +293,9 @@ export default function Markets() {
             </p>
             <Button 
               variant="outline" 
-              onClick={() => {
+                onClick={() => {
                 setSearchQuery('');
-                setSelectedCategory('all');
+                handleCategoryChange('all');
               }}
             >
               {t_i18n.markets.clearFilters || 'Clear all filters'}

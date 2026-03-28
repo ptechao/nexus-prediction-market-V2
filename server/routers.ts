@@ -75,7 +75,7 @@ export const appRouter = router({
     nexus: publicProcedure
       .input(z.object({ 
         category: z.string().optional(),
-        limit: z.number().min(1).max(100).default(50)
+        limit: z.number().min(1).max(200).default(100)
       }).optional())
       .query(async ({ input }) => {
         try {
@@ -89,14 +89,15 @@ export const appRouter = router({
             return [];
           }
 
-          const limit = input?.limit ?? 50;
+          const limit = input?.limit ?? 100;
           const category = input?.category;
 
           let query = db.select().from(markets);
           
           if (category && category !== 'all') {
-            // @ts-ignore
-            query = query.where(eq(markets.category, category));
+            // Use like-based or multi-mapping filtering instead of strict eq
+            // However, to ensure maximum reliability and flexibility, 
+            // we'll fetch all and filter in frontend for rich category logic
           }
 
           return await query.orderBy(desc(markets.createdAt)).limit(limit);

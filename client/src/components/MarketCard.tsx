@@ -70,8 +70,8 @@ export function MarketCard({ market }: { market: Market }) {
       className="group relative overflow-hidden rounded-xl bg-card border border-border transition-all duration-200 hover:shadow-md cursor-pointer flex flex-col h-full"
     >
       {/* Header */}
-      <div className="px-4 pt-4 pb-2 flex items-start justify-between">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="px-3 sm:px-4 pt-3 sm:pt-4 pb-2 flex items-start justify-between gap-1 overflow-hidden">
+        <div className="flex flex-wrap items-center gap-1 sm:gap-2">
           {market.image && (
             <img
               src={market.image}
@@ -106,24 +106,24 @@ export function MarketCard({ market }: { market: Market }) {
       </div>
 
       {/* Content */}
-      <div className="px-4 flex-[1]">
+      <div className="px-3 sm:px-4 flex-[1]">
         <AITranslatedText 
           text={market.title} 
           as="h3"
-          className="font-medium text-base text-foreground mb-1 leading-snug line-clamp-3 group-hover:text-primary transition-colors" 
+          className="font-medium text-sm sm:text-base text-foreground mb-1 leading-snug line-clamp-3 group-hover:text-primary transition-colors" 
         />
-        <div className="text-xs text-muted-foreground flex items-center gap-3 mt-2">
+        <div className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-3 mt-2">
           <span className="font-semibold text-foreground">{formatPool(market.totalPool)}</span> {t.markets.volumeShort || 'Vol.'}
         </div>
       </div>
 
       {/* Odds Bar */}
-      <div className="px-4 mt-4">
-        <div className="flex justify-between items-center mb-1.5">
-          <span className="text-sm font-semibold text-blue-600 dark:text-blue-500">
+      <div className="px-3 sm:px-4 mt-3 sm:mt-4">
+        <div className="flex justify-between items-center mb-1 sm:mb-1.5">
+          <span className="text-xs sm:text-sm font-semibold text-blue-600 dark:text-blue-500">
             {t.betting.yes || 'Yes'} {market.yesOdds}%
           </span>
-          <span className="text-sm font-semibold text-red-500 dark:text-red-400">
+          <span className="text-xs sm:text-sm font-semibold text-red-500 dark:text-red-400">
             {t.betting.no || 'No'} {market.noOdds}%
           </span>
         </div>
@@ -140,17 +140,17 @@ export function MarketCard({ market }: { market: Market }) {
       </div>
 
       {/* Bet Buttons */}
-      <div className="px-4 py-4 mt-auto">
-        <div className="grid grid-cols-2 gap-2">
+      <div className="px-3 sm:px-4 py-3 sm:py-4 mt-auto">
+        <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
           <Button
             onClick={(e) => handleBet('yes', e)}
-            className="bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 shadow-none font-semibold text-sm h-10 border border-blue-200 dark:border-blue-500/20 transition-colors"
+            className="bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-blue-400 shadow-none font-semibold text-xs sm:text-sm h-9 sm:h-10 border border-blue-200 dark:border-blue-500/20 transition-colors"
           >
             {t.markets.bet} {t.betting.yes}
           </Button>
           <Button
             onClick={(e) => handleBet('no', e)}
-            className="bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-500/10 dark:hover:bg-red-500/20 dark:text-red-400 shadow-none font-semibold text-sm h-10 border border-red-200 dark:border-red-500/20 transition-colors"
+            className="bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-500/10 dark:hover:bg-red-500/20 dark:text-red-400 shadow-none font-semibold text-xs sm:text-sm h-9 sm:h-10 border border-red-200 dark:border-red-500/20 transition-colors"
           >
             {t.markets.bet} {t.betting.no}
           </Button>

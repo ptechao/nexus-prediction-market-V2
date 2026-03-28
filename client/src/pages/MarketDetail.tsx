@@ -824,7 +824,7 @@ export default function MarketDetail() {
               {market.resolutionSource && (
                 <div className="mt-4 pt-4 border-t border-slate-700/50">
                   <h3 className="text-sm font-semibold text-slate-400 mb-1">{t_i18n.markets.resolutionSource || 'Resolution Source'}</h3>
-                  <p className="text-sm text-slate-500">{market.resolutionSource}</p>
+                  <AITranslatedText text={market.resolutionSource} as="p" className="text-sm text-slate-500" />
                 </div>
               )}
             </div>
@@ -970,12 +970,11 @@ export default function MarketDetail() {
                 </h2>
                 <div className="flex flex-wrap gap-2">
                   {market.tags.map((tag: string) => (
-                    <span
+                    <AITranslatedText
                       key={tag}
+                      text={tag}
                       className="px-3 py-1 rounded-full text-xs font-medium bg-slate-700/50 text-slate-300 border border-slate-600/30"
-                    >
-                      {tag}
-                    </span>
+                    />
                   ))}
                 </div>
               </div>
