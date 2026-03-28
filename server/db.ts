@@ -11,9 +11,14 @@ export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
       if (!_client) {
-        console.log("[Database] Initializing LibSQL (SQLite) connection...");
+        const url = process.env.DATABASE_URL;
+        const authToken = process.env.DATABASE_AUTH_TOKEN;
+
+        console.log(`[Database] Initializing LibSQL (${url.startsWith("file:") ? "Local" : "Remote"}) connection...`);
+        
         _client = createClient({
-          url: "file:" + (process.env.DATABASE_URL.startsWith("file:") ? process.env.DATABASE_URL.slice(5) : process.env.DATABASE_URL),
+          url: url.startsWith("file:") ? "file:" + url.slice(5) : url,
+          authToken: authToken,
         });
       }
       _db = drizzle(_client);
