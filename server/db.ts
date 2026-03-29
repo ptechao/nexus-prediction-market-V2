@@ -22,12 +22,47 @@ export async function getDb() {
         });
       }
       _db = drizzle(_client);
+      
+      // SELF-HEALING: Ensure the "orders" table has the new columns if push/migrate failed
+      await ensureOrdersSchema(_client);
+
     } catch (error) {
-      console.warn("[Database] Failed to connect:", error);
+      console.warn("[Database] Failed to connect or initialize:", error);
       _db = null;
     }
   }
   return _db;
+}
+
+/**
+ * Migration safeguard: Manually add columns if they are missing.
+ * This handles drift in production environments where drizzle-kit push might fail.
+ */
+async function ensureOrdersSchema(client: any) {
+  try {
+    const columnsToAdd = [
+      { name: "signature", type: "TEXT" },
+      { name: "nonce", type: "INTEGER" },
+      { name: "expiry", type: "INTEGER" }
+    ];
+
+    for (const col of columnsToAdd) {
+      try {
+        // SQLite/LibSQL syntax to add column if not exists is just ALTER TABLE
+        // We wrap in a try-catch because if it exists, it will throw an error
+        await client.execute(`ALTER TABLE orders ADD COLUMN ${col.name} ${col.type}`);
+        console.log(`[Database] Self-healing: Added missing column '${col.name}' to 'orders' table.`);
+      } catch (err: any) {
+        if (err.message?.includes("duplicate column name") || err.message?.includes("already exists")) {
+          // Column already exists, ignore
+          continue;
+        }
+        console.warn(`[Database] Safeguard warning for column '${col.name}':`, err.message);
+      }
+    }
+  } catch (error: any) {
+    console.warn("[Database] Schema self-healing skipped or failed:", error.message);
+  }
 }
 
 export async function upsertUser(user: InsertUser): Promise<void> {

@@ -26,6 +26,11 @@ export interface GenericMarketSeed {
  * Endpoint: https://api.elections.kalshi.com/trade-api/v2/get_markets
  */
 export async function fetchKalshiMarkets(): Promise<GenericMarketSeed[]> {
+  // Kalshi elections API is currently decommissioned (404)
+  // Disabling to avoid log noise until new endpoint is confirmed
+  return [];
+  
+  /*
   try {
     const response = await axios.get("https://api.elections.kalshi.com/trade-api/v2/get_markets", {
       params: { limit: 20, status: "open" },
@@ -55,6 +60,7 @@ export async function fetchKalshiMarkets(): Promise<GenericMarketSeed[]> {
     console.error("Error fetching from Kalshi:", error);
     return [];
   }
+  */
 }
 
 function mapKalshiCategory(cat: string): string {
