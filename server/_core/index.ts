@@ -61,8 +61,16 @@ async function startServer() {
     console.log(`[Server] Port chosen: ${port}`);
   }
 
+  server.on("error", (err: any) => {
+    console.error("[Server] Critical Error:", err.message);
+    if (err.code === "EADDRINUSE") {
+      console.error(`[Server] Port ${port} is already in use. Please choose another port.`);
+    }
+    process.exit(1);
+  });
+
   server.listen(port, "0.0.0.0", () => {
-    console.log(`Server running on http://0.0.0.0:${port}/`);
+    console.log(`[Server] Boot success! Listening on http://0.0.0.0:${port}/`);
     
     // ─── Background Market Sync Worker ───
     const SYNC_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
@@ -99,4 +107,7 @@ async function startServer() {
   });
 }
 
-startServer().catch(console.error);
+startServer().catch(err => {
+  console.error("[Server] Top-level startup failure:", err.message);
+  process.exit(1);
+});

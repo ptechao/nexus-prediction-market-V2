@@ -16,9 +16,9 @@ export const users = sqliteTable("users", {
   email: text("email"),
   loginMethod: text("loginMethod"),
   role: text("role").default("user").notNull(),
-  createdAt: text("createdAt").default(sql`CURRENT_TIMESTAMP`).notNull(),
-  updatedAt: text("updatedAt").default(sql`CURRENT_TIMESTAMP`).notNull(),
-  lastSignedIn: text("lastSignedIn").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  createdAt: text("createdAt").default(sql`CURRENT_TIMESTAMP` as unknown as SQL).notNull(),
+  updatedAt: text("updatedAt").default(sql`CURRENT_TIMESTAMP` as unknown as SQL).notNull(),
+  lastSignedIn: text("lastSignedIn").default(sql`CURRENT_TIMESTAMP` as unknown as SQL).notNull(),
 });
 
 export type User = typeof users.$inferSelect;
@@ -177,5 +177,5 @@ export const orders = sqliteTable("orders", {
   nonce: integer("nonce", { mode: 'number' }),
   expiry: integer("expiry", { mode: 'number' }),
   status: text("status").default("OPEN"),
-  createdAt: text("createdAt").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  createdAt: text("createdAt").default(sql`CURRENT_TIMESTAMP` as unknown as SQL).notNull(),
 });
