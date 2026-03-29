@@ -51,7 +51,7 @@ export interface MarketSeed {
 }
 
 const API_KEY = process.env.API_FOOTBALL_KEY || "";
-const API_BASE = "https://api-football-v3.p.rapidapi.com/v3";
+const API_BASE = "https://api-football-v1.p.rapidapi.com/v3";
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // ms
 
@@ -125,7 +125,7 @@ async function fetchWithRetry(
     const response = await axios.get(url, {
       headers: {
         "x-rapidapi-key": API_KEY,
-        "x-rapidapi-host": "api-football-v3.p.rapidapi.com",
+        "x-rapidapi-host": "api-football-v1.p.rapidapi.com",
       },
     });
 
