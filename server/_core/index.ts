@@ -69,11 +69,29 @@ async function startServer() {
       serveStatic(app);
     }
 
-    // 6. DB Check (Lazy)
-    // We already have self-healing in getDb(), but we can trigger it here
-    getDb().catch(err => console.error("[Database] Background init failed:", err.message));
+    // ─── STAGGERED INITIALIZATION (Memory & CPU Protection) ───
+    
+    // Log Memory Usage periodically for debugging Render Free Tier
+    const logMemory = () => {
+      const used = process.memoryUsage().heapUsed / 1024 / 1024;
+      console.log(`[System] Memory Usage: ${Math.round(used * 100) / 100} MB / 512.00 MB`);
+    };
+    logMemory();
+    setInterval(logMemory, 60000); // Log every minute
 
-    // 7. BACKGROUND JOBS
+    // 1. Deferred DB Initialization (10s delay)
+    // Runs self-healing migrations without blocking initial health check
+    setTimeout(async () => {
+      console.log("[Database] Starting staggered initialization...");
+      try {
+        await getDb();
+        console.log("[Database] Online and schema verified.");
+      } catch (err: any) {
+        console.error("[Database] Background init failed:", err.message);
+      }
+    }, 10000);
+
+    // 2. BACKGROUND JOBS
     const handleWorkerError = (err: any, prefix: string) => {
       const msg = err.message || (typeof err === 'string' ? err : 'Unknown error');
       console.error(`${prefix} Error:`, msg);
@@ -99,16 +117,19 @@ async function startServer() {
       }
     };
 
-    // Staggered background jobs start
+    // Staggered background jobs start (Further delayed)
+    
+    // Start Matching Engine after 1 minute
     setTimeout(() => {
-      console.log("[Matching Engine] Running background matcher...");
+      console.log("[Matching Engine] Starting background matcher (60s staggered start)...");
       runMatchingTask();
-    }, 45000); // Wait 45s after port bound
+    }, 60000);
 
+    // Start Initial Sync after 2 minutes
     setTimeout(() => {
-      console.log("[Sync Worker] Running background sync...");
+      console.log("[Sync Worker] Starting background sync (120s staggered start)...");
       runSyncTask();
-    }, 90000); // Wait 90s after port bound
+    }, 120000);
   });
 
   server.on("error", (err: any) => {
