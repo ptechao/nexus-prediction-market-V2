@@ -37,6 +37,11 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
+  // Clean Health Check for Render
+  app.get("/health", (req, res) => {
+    res.status(200).send("OK");
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",
@@ -56,7 +61,7 @@ async function startServer() {
   const port = process.env.PORT ? parseInt(process.env.PORT) : await findAvailablePort(3000);
 
   if (process.env.PORT) {
-    console.log(`[Server] Using Render-assigned PORT: ${port}`);
+    console.log(`[Server] Detected Render-assigned PORT: ${port}`);
   } else {
     console.log(`[Server] Port chosen: ${port}`);
   }
@@ -72,42 +77,56 @@ async function startServer() {
   server.listen(port, "0.0.0.0", () => {
     console.log(`[Server] Boot success! Listening on http://0.0.0.0:${port}/`);
     
-    // ─── Background Market Sync Worker ───
-    const SYNC_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
-    console.log(`[Sync Worker] Starting background market synchronization every ${SYNC_INTERVAL_MS / 60000} minutes.`);
+    // ─── BACKGROUND JOBS STRATEGY (Non-blocking & Staggered) ───
     
     const handleWorkerError = (err: any, prefix: string) => {
-      const errDump = (err.message || '') + ' ' + (err.code || '') + ' ' + JSON.stringify(err, Object.getOwnPropertyNames(err));
-      if (errDump.includes('ECONNREFUSED')) {
-        console.warn(`[!] ${prefix} Skipped: MySQL Database is unreachable (ECONNREFUSED). Please ensure your database service is running.`);
-      } else {
-        console.error(`${prefix} Error:`, err.message || err);
+      // SILENT LOGGING: Do NOT print full axios/sql error objects to avoid memory/log clogging
+      const msg = err.message || (typeof err === 'string' ? err : 'Unknown error');
+      console.error(`${prefix} Error:`, msg);
+    };
+
+    // 1. Market Sync Worker (Recursive setTimeout to avoid overlaps)
+    const runSyncTask = async () => {
+      try {
+        console.log("[Sync Worker] Running routine automatic market synchronization...");
+        await createMarketsJob({ mockMode: false });
+      } catch (err) {
+        handleWorkerError(err, "[Sync Worker]");
+      } finally {
+        const SYNC_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+        setTimeout(runSyncTask, SYNC_INTERVAL_MS);
       }
     };
 
-    setInterval(() => {
-      console.log("[Sync Worker] Running routine automatic market synchronization...");
-      createMarketsJob({ mockMode: false }).catch(err => handleWorkerError(err, "[Sync Worker] Routine Sync"));
-    }, SYNC_INTERVAL_MS);
+    // 2. Matching Engine Worker (Recursive setTimeout)
+    const runMatchingTask = async () => {
+      try {
+        await runMatchingEngine();
+      } catch (err) {
+        handleWorkerError(err, "[Matching Engine]");
+      } finally {
+        const MATCHING_INTERVAL_MS = 60 * 1000; // 60 seconds (relaxed for stability)
+        setTimeout(runMatchingTask, MATCHING_INTERVAL_MS);
+      }
+    };
+
+    // ─── STAGGERED STARTUP ───
     
-    // Run an initial sync shortly after the server boots up (30 seconds)
-    // This populates DB for the first time if heavily out of date
+    // Start Matching Engine after 30 seconds
     setTimeout(() => {
-      console.log("[Sync Worker] Running initial post-boot market synchronization...");
-      createMarketsJob({ mockMode: false }).catch(err => handleWorkerError(err, "[Sync Worker] Post-boot Sync"));
+      console.log("[Matching Engine] Starting background matcher (staggered start)...");
+      runMatchingTask();
     }, 30000);
 
-    // ─── Matching Engine Worker ───
-    const MATCHING_INTERVAL_MS = 30 * 1000; // 30 seconds
-    console.log(`[Matching Engine] Starting background matcher every ${MATCHING_INTERVAL_MS / 1000} seconds.`);
-    
-    setInterval(() => {
-      runMatchingEngine().catch(err => console.error("[Matching Engine] Routine failure:", err));
-    }, MATCHING_INTERVAL_MS);
+    // Start Initial Sync after 60 seconds
+    setTimeout(() => {
+      console.log("[Sync Worker] Starting background sync (staggered start)...");
+      runSyncTask();
+    }, 60000);
   });
 }
 
 startServer().catch(err => {
-  console.error("[Server] Top-level startup failure:", err.message);
+  console.error("[Server] Top-level startup failure:", err.message || err);
   process.exit(1);
 });
