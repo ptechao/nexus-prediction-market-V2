@@ -32,101 +32,91 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
-  // Configure body parser with larger size limit for file uploads
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
-  // OAuth callback under /api/oauth/callback
-  registerOAuthRoutes(app);
-  // Clean Health Check for Render
-  app.get("/health", (req, res) => {
-    res.status(200).send("OK");
-  });
 
-  // tRPC API
-  app.use(
-    "/api/trpc",
-    createExpressMiddleware({
-      router: appRouter,
-      createContext,
-    })
-  );
-  // development mode uses Vite, production mode uses static files
-  if (process.env.NODE_ENV === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
-
-  // FORCE PORT IN PRODUCTION (RENDER)
-  const port = process.env.PORT ? parseInt(process.env.PORT) : await findAvailablePort(3000);
-
-  if (process.env.PORT) {
-    console.log(`[Server] Detected Render-assigned PORT: ${port}`);
-  } else {
-    console.log(`[Server] Port chosen: ${port}`);
-  }
-
-  server.on("error", (err: any) => {
-    console.error("[Server] Critical Error:", err.message);
-    if (err.code === "EADDRINUSE") {
-      console.error(`[Server] Port ${port} is already in use. Please choose another port.`);
-    }
-    process.exit(1);
-  });
-
-  server.listen(port, "0.0.0.0", () => {
+  // IMMEDIATELY DETECT PORT & LISTEN
+  // Render Free Plan needs the port bound ASAP to pass health check
+  const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
+  
+  server.listen(port, "0.0.0.0", async () => {
     console.log(`[Server] Boot success! Listening on http://0.0.0.0:${port}/`);
     
-    // ─── BACKGROUND JOBS STRATEGY (Non-blocking & Staggered) ───
-    
+    // ─── LATE INITIALIZATION (Non-blocking) ───
+
+    // 1. Configure body parser
+    app.use(express.json({ limit: "50mb" }));
+    app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+    // 2. Health check (Very light)
+    app.get("/health", (req, res) => res.status(200).send("OK"));
+
+    // 3. OAuth
+    registerOAuthRoutes(app);
+
+    // 4. tRPC
+    app.use(
+      "/api/trpc",
+      createExpressMiddleware({
+        router: appRouter,
+        createContext,
+      })
+    );
+
+    // 5. Static / Vite
+    if (process.env.NODE_ENV === "development") {
+      await setupVite(app, server);
+    } else {
+      serveStatic(app);
+    }
+
+    // 6. DB Check (Lazy)
+    // We already have self-healing in getDb(), but we can trigger it here
+    getDb().catch(err => console.error("[Database] Background init failed:", err.message));
+
+    // 7. BACKGROUND JOBS
     const handleWorkerError = (err: any, prefix: string) => {
-      // SILENT LOGGING: Do NOT print full axios/sql error objects to avoid memory/log clogging
       const msg = err.message || (typeof err === 'string' ? err : 'Unknown error');
       console.error(`${prefix} Error:`, msg);
     };
 
-    // 1. Market Sync Worker (Recursive setTimeout to avoid overlaps)
     const runSyncTask = async () => {
       try {
-        console.log("[Sync Worker] Running routine automatic market synchronization...");
         await createMarketsJob({ mockMode: false });
       } catch (err) {
         handleWorkerError(err, "[Sync Worker]");
       } finally {
-        const SYNC_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
-        setTimeout(runSyncTask, SYNC_INTERVAL_MS);
+        setTimeout(runSyncTask, 15 * 60 * 1000); // 15m
       }
     };
 
-    // 2. Matching Engine Worker (Recursive setTimeout)
     const runMatchingTask = async () => {
       try {
         await runMatchingEngine();
       } catch (err) {
         handleWorkerError(err, "[Matching Engine]");
       } finally {
-        const MATCHING_INTERVAL_MS = 60 * 1000; // 60 seconds (relaxed for stability)
-        setTimeout(runMatchingTask, MATCHING_INTERVAL_MS);
+        setTimeout(runMatchingTask, 60 * 1000); // 1m
       }
     };
 
-    // ─── STAGGERED STARTUP ───
-    
-    // Start Matching Engine after 30 seconds
+    // Staggered background jobs start
     setTimeout(() => {
-      console.log("[Matching Engine] Starting background matcher (staggered start)...");
+      console.log("[Matching Engine] Running background matcher...");
       runMatchingTask();
-    }, 30000);
+    }, 45000); // Wait 45s after port bound
 
-    // Start Initial Sync after 60 seconds
     setTimeout(() => {
-      console.log("[Sync Worker] Starting background sync (staggered start)...");
+      console.log("[Sync Worker] Running background sync...");
       runSyncTask();
-    }, 60000);
+    }, 90000); // Wait 90s after port bound
+  });
+
+  server.on("error", (err: any) => {
+    console.error("[Server] Critical Error:", err.message);
+    process.exit(1);
   });
 }
 
 startServer().catch(err => {
-  console.error("[Server] Top-level startup failure:", err.message || err);
+  console.error("[Server] Fatal process failure:", err.message || err);
   process.exit(1);
 });
