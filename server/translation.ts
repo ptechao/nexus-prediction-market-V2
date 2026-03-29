@@ -63,8 +63,17 @@ Text: ${text}`;
     translationCache.set(cacheKey, result);
     return result;
   } catch (error: any) {
-    // Only log essential info, not full error object
-    console.error(`[Translation] Fallback to original text triggered. Error: ${error.message || 'Unknown'}`);
+    // CAPTURE DETAILED ERROR INFO
+    const errorDetails = error.message || 'Unknown error';
+    const isAuthError = errorDetails.includes('401') || errorDetails.includes('unauthorized');
+    const isQuotaError = errorDetails.includes('429') || errorDetails.includes('quota');
+    
+    console.error(`[Translation Error] Target: ${targetLang}, Text: "${text.slice(0, 50)}..."`);
+    console.error(`[Translation Error] Details: ${errorDetails}`);
+    
+    if (isAuthError) console.error(`[Translation Error] Potential API Key Issue! check OPENAI_API_KEY`);
+    if (isQuotaError) console.error(`[Translation Error] OpenAI Quota Exceeded!`);
+
     return text;
   }
 }

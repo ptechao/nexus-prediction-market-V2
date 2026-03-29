@@ -12,6 +12,8 @@ import {
   TrendingUp,
   BarChart3,
   Users,
+  Globe,
+  Languages,
 } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { MarketCard, MarketCardSkeleton, formatPool, type Market } from '@/components/MarketCard';
@@ -366,50 +368,85 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Features */}
-      <section className="px-4 sm:px-6 lg:px-8 py-16 bg-muted/50 border-y border-border">
+      {/* ── The NEXUS Advantage (Enhanced Features) ── */}
+      <section className="relative px-4 sm:px-6 lg:px-8 py-20 lg:py-28 overflow-hidden">
+        {/* Background elements */}
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[120px] -z-10" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[120px] -z-10" />
+        
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-2xl font-bold text-foreground text-center mb-10">
-            {t('home.whyNexus') || 'Why Choose NEXUS?'}
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="text-center mb-16 px-4">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-foreground mb-4 tracking-tight">
+              <AITranslatedText text="Why NEXUS Beats the Rest" />
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              <AITranslatedText text="Experience the next generation of prediction markets with AI-driven insights and institutional-grade speed." />
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
               {
                 icon: Zap,
-                title: t('home.instantSettlement') || 'Instant Settlement',
-                desc: t('home.instantSettlementDesc') || 'Bets resolved instantly on-chain with transparent oracle verification.',
-                color: 'text-amber-500',
+                title: "AI-Powered Predictions",
+                desc: "Get the edge with our proprietary AI that analyzes thousands of data points across global markets in real-time.",
+                color: "from-amber-400 to-orange-500",
+                shadow: "shadow-orange-500/20",
               },
               {
                 icon: Users,
-                title: 'KOL Profit Sharing',
-                desc: 'Earn passive income by sharing markets. Get 50% of fees from your referrals permanently.',
-                color: 'text-indigo-500',
+                title: "Social Copy Trading",
+                desc: "Don't know where to bet? Follow top-tier predictors transparently and mirror their success automatically.",
+                color: "from-indigo-400 to-purple-600",
+                shadow: "shadow-purple-500/20",
               },
               {
-                icon: BarChart3,
-                title: 'Limit Order Engine',
-                desc: 'Stock-like trading experience with deep order books and slippage protection.',
-                color: 'text-cyan-500',
+                icon: Globe,
+                title: "Global Market Access",
+                desc: "Access the world's deepest liquidity pools. Trade on everything from US elections to the World Cup with zero friction.",
+                color: "from-blue-400 to-cyan-600",
+                shadow: "shadow-cyan-500/20",
               },
               {
                 icon: Shield,
-                title: t('home.secureAudited') || 'Secure & Audited',
-                desc: t('home.secureAuditedDesc') || 'Smart contracts audited by leading security firms for maximum safety.',
-                color: 'text-emerald-500',
+                title: "Ultra-Fast Matching",
+                desc: "Built on a robust VPS infrastructure, our order-matching engine handles massive volume with sub-second latency.",
+                color: "from-emerald-400 to-teal-600",
+                shadow: "shadow-emerald-500/20",
               },
-            ].map((feature) => (
+              {
+                icon: Languages,
+                title: "Borderless AI Translation",
+                desc: "Read and trade in your native tongue. Our real-time AI provides context-aware translations for titles and debates.",
+                color: "from-rose-400 to-red-600",
+                shadow: "shadow-rose-500/20",
+              },
+              {
+                icon: BarChart3,
+                title: "Pro-Grade Order Book",
+                desc: "Experience desktop-class trading with deep liquidity, limit orders, and precise market depth visualization.",
+                color: "from-sky-400 to-blue-600",
+                shadow: "shadow-blue-500/20",
+              },
+            ].map((feature, idx) => (
               <div
                 key={feature.title}
-                className="p-6 rounded-xl bg-card border border-border shadow-sm hover:shadow-md transition-all duration-300"
+                className="group relative p-8 rounded-3xl bg-card/40 backdrop-blur-sm border border-border/50 hover:border-border transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl overflow-hidden"
               >
-                <feature.icon className={`w-8 h-8 ${feature.color} mb-4`} />
-                <h3 className="text-lg font-semibold text-foreground mb-2">
+                {/* Accent line */}
+                <div className={cn("absolute top-0 left-0 w-full h-1 bg-gradient-to-r opacity-30 group-hover:opacity-100 transition-opacity", feature.color)} />
+                
+                <div className={cn("w-14 h-14 rounded-2xl bg-gradient-to-br flex items-center justify-center mb-6 shadow-lg", feature.color, feature.shadow)}>
+                  <feature.icon className="w-7 h-7 text-white" />
+                </div>
+                
+                <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors">
                   <AITranslatedText text={feature.title} />
                 </h3>
-                <div className="text-sm text-muted-foreground leading-relaxed">
+                
+                <p className="text-muted-foreground leading-relaxed text-sm">
                   <AITranslatedText text={feature.desc} />
-                </div>
+                </p>
               </div>
             ))}
           </div>
