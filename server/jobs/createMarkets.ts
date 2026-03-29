@@ -89,7 +89,7 @@ async function processMarketSeeds(db: any, seeds: GenericMarketSeed[], sourceNam
 export async function createMarketsJob(options: CreateMarketJobOptions = {}) {
   const { mockMode = false, dryRun = false, leagueId = 39 } = options;
 
-  console.log(`[${new Date().toISOString()}] Starting LIGHTWEIGHT sync (30 top, 5 per tag)...`);
+  console.log(`[${new Date().toISOString()}] Starting COMPREHENSIVE sync (100 top, 20 per tag)...`);
   
   try {
     const db = await getDb();
@@ -102,7 +102,7 @@ export async function createMarketsJob(options: CreateMarketJobOptions = {}) {
     let totalSkipped = 0;
 
     // 1. Polymarket - General Top
-    const polymarketLimit = 30; // REDUCED from 100
+    const polymarketLimit = 100; 
     const polymarketMarkets = await fetchTopMarkets(polymarketLimit);
     const pmSeeds: GenericMarketSeed[] = polymarketMarkets.map(m => ({
       source: "polymarket",
@@ -126,10 +126,10 @@ export async function createMarketsJob(options: CreateMarketJobOptions = {}) {
     totalSkipped += pmRes.skipped;
 
     // 1b. Polymarket - Categorized Tags
-    const tagsToFetch = ["crypto", "entertainment", "politics", "elections", "basketball", "economy"];
+    const tagsToFetch = ["crypto", "entertainment", "politics", "elections", "basketball", "nba", "economy"];
     for (const tag of tagsToFetch) {
       try {
-        const taggedMarkets = await fetchMarketsByTag(tag, 5); // REDUCED from 20
+        const taggedMarkets = await fetchMarketsByTag(tag, 20); 
         const taggedSeeds: GenericMarketSeed[] = taggedMarkets.map(m => ({
           source: "polymarket",
           sourceId: m.id,
@@ -151,7 +151,7 @@ export async function createMarketsJob(options: CreateMarketJobOptions = {}) {
         totalCreated += tRes.created;
         totalSkipped += tRes.skipped;
       } catch (e) {
-        // Silently skip tag failures
+        console.warn(`  ⚠️ Failed to fetch Polymarket tag: ${tag}`);
       }
     }
 
