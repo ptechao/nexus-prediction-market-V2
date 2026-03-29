@@ -14,6 +14,10 @@ import {
   Users,
   Globe,
   Languages,
+  Activity,
+  Cpu,
+  Coins,
+  LayoutGrid,
 } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { MarketCard, MarketCardSkeleton, formatPool, type Market } from '@/components/MarketCard';
@@ -368,90 +372,150 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── The NEXUS Advantage (Enhanced Features) ── */}
-      <section className="relative px-4 sm:px-6 lg:px-8 py-20 lg:py-28 overflow-hidden">
-        {/* Background elements */}
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[120px] -z-10" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[120px] -z-10" />
+      {/* ── THE NEXUS MASTERPIECE: PRODUCT ECOSYSTEM ── */}
+      <div className="relative overflow-hidden bg-slate-950">
+        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
         
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16 px-4">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-foreground mb-4 tracking-tight">
-              <AITranslatedText text="Why NEXUS Beats the Rest" />
-            </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              <AITranslatedText text="Experience the next generation of prediction markets with AI-driven insights and institutional-grade speed." />
-            </p>
-          </div>
+        {/* Section 1: 專業交易生態 (Professional Trading) */}
+        <section className="px-4 sm:px-6 lg:px-8 py-20 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/20 via-slate-950 to-slate-950">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-16">
+              <span className="inline-block px-4 py-1.5 rounded-full bg-blue-500/10 text-blue-400 text-xs font-bold tracking-widest uppercase mb-4 border border-blue-500/20">
+                Professional Suite
+              </span>
+              <h2 className="text-3xl sm:text-5xl font-extrabold text-white mb-6 tracking-tight">
+                <AITranslatedText text="專業級交易生態" />
+              </h2>
+              <p className="text-slate-400 text-lg max-w-2xl mx-auto">
+                <AITranslatedText text="Institutional-grade liquidity and matching speed for the most demanding predictors." />
+              </p>
+            </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              {
-                icon: Zap,
-                title: "AI-Powered Predictions",
-                desc: "Get the edge with our proprietary AI that analyzes thousands of data points across global markets in real-time.",
-                color: "from-amber-400 to-orange-500",
-                shadow: "shadow-orange-500/20",
-              },
-              {
-                icon: Users,
-                title: "Social Copy Trading",
-                desc: "Don't know where to bet? Follow top-tier predictors transparently and mirror their success automatically.",
-                color: "from-indigo-400 to-purple-600",
-                shadow: "shadow-purple-500/20",
-              },
-              {
-                icon: Globe,
-                title: "Global Market Access",
-                desc: "Access the world's deepest liquidity pools. Trade on everything from US elections to the World Cup with zero friction.",
-                color: "from-blue-400 to-cyan-600",
-                shadow: "shadow-cyan-500/20",
-              },
-              {
-                icon: Shield,
-                title: "Ultra-Fast Matching",
-                desc: "Built on a robust VPS infrastructure, our order-matching engine handles massive volume with sub-second latency.",
-                color: "from-emerald-400 to-teal-600",
-                shadow: "shadow-emerald-500/20",
-              },
-              {
-                icon: Languages,
-                title: "Borderless AI Translation",
-                desc: "Read and trade in your native tongue. Our real-time AI provides context-aware translations for titles and debates.",
-                color: "from-rose-400 to-red-600",
-                shadow: "shadow-rose-500/20",
-              },
-              {
-                icon: BarChart3,
-                title: "Pro-Grade Order Book",
-                desc: "Experience desktop-class trading with deep liquidity, limit orders, and precise market depth visualization.",
-                color: "from-sky-400 to-blue-600",
-                shadow: "shadow-blue-500/20",
-              },
-            ].map((feature, idx) => (
-              <div
-                key={feature.title}
-                className="group relative p-8 rounded-3xl bg-card/40 backdrop-blur-sm border border-border/50 hover:border-border transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl overflow-hidden"
-              >
-                {/* Accent line */}
-                <div className={cn("absolute top-0 left-0 w-full h-1 bg-gradient-to-r opacity-30 group-hover:opacity-100 transition-opacity", feature.color)} />
-                
-                <div className={cn("w-14 h-14 rounded-2xl bg-gradient-to-br flex items-center justify-center mb-6 shadow-lg", feature.color, feature.shadow)}>
-                  <feature.icon className="w-7 h-7 text-white" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {[
+                {
+                    icon: LayoutGrid,
+                    title: "限價單簿 (Order Book)",
+                    desc: "提供專業交易者所需的深度圖與限價單功能，告別傳統預測市場的高滑點，實現精準成交。",
+                    color: "text-blue-400",
+                    bg: "bg-blue-400/10",
+                },
+                {
+                    icon: Activity,
+                    title: "瞬時自動結算",
+                    desc: "基於智能合約與去中心化預言機（UMA/Chainlink），賽事結束即刻結算，資產秒級到帳。",
+                    color: "text-emerald-400",
+                    bg: "bg-emerald-400/10",
+                },
+                {
+                    icon: Globe,
+                    title: "全球流動性聚合",
+                    desc: "深度集成 Polymarket、Kalshi 與多元數據源，確保您始終能獲得全球最優的賠率與成交規模。",
+                    color: "text-cyan-400",
+                    bg: "bg-cyan-400/10",
+                }
+              ].map((f) => (
+                <div key={f.title} className="p-8 rounded-3xl bg-white/[0.03] border border-white/10 hover:border-white/20 transition-all group overflow-hidden relative">
+                  <div className={cn("inline-flex p-4 rounded-2xl mb-6 transition-transform group-hover:scale-110", f.bg, f.color)}>
+                     <f.icon className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-4"><AITranslatedText text={f.title} /></h3>
+                  <p className="text-slate-400 text-sm leading-relaxed"><AITranslatedText text={f.desc} /></p>
                 </div>
-                
-                <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors">
-                  <AITranslatedText text={feature.title} />
-                </h3>
-                
-                <p className="text-muted-foreground leading-relaxed text-sm">
-                  <AITranslatedText text={feature.desc} />
-                </p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+
+        {/* Section 2: AI 智能核心 (AI-Powered Insights) */}
+        <section className="px-4 sm:px-6 lg:px-8 py-20 bg-slate-950 border-y border-white/5">
+          <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16">
+            <div className="flex-1 text-left">
+              <span className="inline-block px-4 py-1.5 rounded-full bg-purple-500/10 text-purple-400 text-xs font-bold tracking-widest uppercase mb-4 border border-purple-500/20">
+                AI Powered Core
+              </span>
+              <h2 className="text-3xl sm:text-5xl font-extrabold text-white mb-8 tracking-tight leading-tight">
+                 <AITranslatedText text="引領未來的 AI 智能分析" />
+              </h2>
+              <div className="space-y-8">
+                {[
+                    {
+                        title: "毫秒級多語智譯",
+                        desc: "專享 LLM 翻譯技術，支持 30+ 語系，讓全球預測熱點即刻變成本地商機。",
+                        icon: Languages
+                    },
+                    {
+                        title: "智慧賽況預測",
+                        desc: "集成 GPT-4o 與大數據分析模型，針對足球賽事、政治選舉等提供全方位的 AI 勝率解析。",
+                        icon: Cpu
+                    },
+                    {
+                        title: "自動化熱度追蹤",
+                        desc: "AI 自動對數萬個市場進行分類並判斷熱度趨勢，精準抓取異常賠率機會。",
+                        icon: Zap
+                    }
+                ].map((item) => (
+                    <div key={item.title} className="flex gap-6 items-start group">
+                        <div className="mt-1 p-3 rounded-xl bg-purple-500/10 text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-all">
+                            <item.icon className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h4 className="text-lg font-bold text-white mb-2"><AITranslatedText text={item.title} /></h4>
+                            <p className="text-slate-400 text-sm leading-relaxed"><AITranslatedText text={item.desc} /></p>
+                        </div>
+                    </div>
+                ))}
+              </div>
+            </div>
+            {/* Visual block */}
+            <div className="flex-1 w-full max-w-xl mx-auto lg:mx-0 aspect-square rounded-3xl bg-gradient-to-br from-purple-600/20 to-blue-600/20 border border-white/10 flex items-center justify-center relative group overflow-hidden">
+                <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1620712943543-bcc4628c9759?q=80&w=800&auto=format&fit=crop')] bg-cover opacity-20 transition-transform duration-[10s] group-hover:scale-110" />
+                <div className="relative text-center p-8">
+                    <div className="w-24 h-24 mx-auto bg-purple-500 rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(168,85,247,0.5)] mb-6 animate-pulse">
+                        <Cpu className="w-12 h-12 text-white" />
+                    </div>
+                    <div className="text-2xl font-black text-white mb-2 font-mono uppercase tracking-tighter italic">Neural Engine v2.0</div>
+                    <div className="text-xs text-purple-300 font-mono tracking-widest">REAL-TIME DATA PROCESSING ACTIVE</div>
+                </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Section 3: 社交與收益 (Social & Revenue Share) */}
+        <section className="px-4 sm:px-6 lg:px-8 py-20 bg-[radial-gradient(ellipse_at_bottom,_var(--tw-gradient-stops))] from-amber-900/20 via-slate-950 to-slate-950">
+          <div className="max-w-7xl mx-auto">
+             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <div className="p-10 rounded-[32px] bg-gradient-to-br from-indigo-900/30 to-slate-900 border border-indigo-500/20 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Users className="w-40 h-40 text-indigo-400 -rotate-12" />
+                    </div>
+                    <span className="inline-block px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-xs font-bold mb-6 border border-indigo-500/20">Copy Trading</span>
+                    <h3 className="text-3xl font-bold text-white mb-4"><AITranslatedText text="透明社交跟單系統" /></h3>
+                    <p className="text-slate-400 mb-8 max-w-md"><AITranslatedText text="不需要專業知識也能穩定獲利。公開追蹤頂級交易者的金庫（Vault）表現，一鍵參與，共享成功者的每一筆精準預測。" /></p>
+                    <Link href="/leaderboard">
+                        <Button className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold h-12 px-8 rounded-xl">
+                            <AITranslatedText text="瀏覽排行榜" />
+                        </Button>
+                    </Link>
+                </div>
+
+                <div className="p-10 rounded-[32px] bg-gradient-to-br from-amber-900/30 to-slate-900 border border-amber-500/20 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Coins className="w-40 h-40 text-amber-400 rotate-12" />
+                    </div>
+                    <span className="inline-block px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 text-xs font-bold mb-6 border border-amber-500/20">Referral Program</span>
+                    <h3 className="text-3xl font-bold text-white mb-4"><AITranslatedText text="夥伴激勵：50% 永久返佣" /></h3>
+                    <p className="text-slate-400 mb-8 max-w-md"><AITranslatedText text="加入我們的 KOL 或夥伴計劃。每當您的受邀好友進行一筆預測，您就能永久共享協議 50% 的手續費，打造真正的被動多元收益。" /></p>
+                    <Link href="/profile">
+                        <Button className="bg-amber-600 hover:bg-amber-500 text-white font-bold h-12 px-8 rounded-xl">
+                            <AITranslatedText text="獲取專屬連結" />
+                        </Button>
+                    </Link>
+                </div>
+             </div>
+          </div>
+        </section>
+      </div>
 
       {/* CTA */}
       <section className="px-4 sm:px-6 lg:px-8 py-20">

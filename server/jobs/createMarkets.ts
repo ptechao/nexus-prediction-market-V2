@@ -9,7 +9,8 @@ import {
   fetchManifoldMarkets,
   type GenericMarketSeed
 } from "../services/sources/externalMarkets";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
+import { normalizeTitle } from "../_core/stringUtils";
 
 interface CreateMarketJobOptions {
   mockMode?: boolean;
@@ -22,59 +23,84 @@ interface CreateMarketJobOptions {
  */
 async function processMarketSeeds(db: any, seeds: GenericMarketSeed[], sourceName: string, dryRun: boolean) {
   let created = 0;
+  let updated = 0;
   let skipped = 0;
 
+  // Pre-fetch existing markets by title and end_time to catch cross-source duplicates
+  // This is a heuristic: if titles are "same" (normalized) and end times are similar, skip.
+  const existingMarkets = await db.select({
+    id: markets.id,
+    title: markets.title,
+    endTime: markets.endTime,
+    sourceId: markets.sourceId
+  }).from(markets);
+
   for (const seed of seeds) {
-    // Yield event loop to prevent blocking HTTP health checks on small CPU instances
-    await new Promise(resolve => setTimeout(resolve, 50)); 
+    // Yield event loop
+    await new Promise(resolve => setTimeout(resolve, 20)); 
 
-    const existing = await db
-      .select()
-      .from(markets)
-      .where(eq(markets.sourceId, String(seed.sourceId)))
-      .limit(1);
+    const normSeedTitle = normalizeTitle(seed.title);
+    
+    // 1. Cross-source check: Check if a similar market already exists (different ID but same title/end_time)
+    const duplicateByTitle = existingMarkets.find((m: any) => 
+      normalizeTitle(m.title) === normSeedTitle && 
+      Math.abs(new Date(m.endTime).getTime() - new Date(seed.endTime).getTime()) < 24 * 60 * 60 * 1000 // Within 24h
+    );
 
-    if (existing.length > 0) {
-      if (!dryRun) {
-        await db.update(markets)
-          .set({
-            yesOdds: seed.yesOdds !== undefined ? seed.yesOdds : existing[0].yesOdds,
-            noOdds: seed.noOdds !== undefined ? seed.noOdds : existing[0].noOdds,
-            totalPool: seed.totalPool !== undefined ? seed.totalPool : existing[0].totalPool,
-            volume24h: seed.volume24h !== undefined ? seed.volume24h : existing[0].volume24h,
-            participants: seed.participants !== undefined ? seed.participants : existing[0].participants,
-            updatedAt: new Date().toISOString(),
-          })
-          .where(eq(markets.id, existing[0].id));
-      }
+    if (duplicateByTitle && duplicateByTitle.sourceId !== String(seed.sourceId)) {
+      // console.log(`[Sync] Skipping potential cross-source duplicate: "${seed.title}" (Matches ID: ${duplicateByTitle.sourceId})`);
       skipped++;
       continue;
     }
 
     if (!dryRun) {
-      await db.insert(markets).values({
-        sourceId: String(seed.sourceId),
-        source: seed.source as any,
-        title: seed.title,
-        description: seed.description,
-        category: seed.category,
-        eventType: seed.eventType,
-        startTime: seed.startTime ? new Date(seed.startTime).toISOString() : null,
-        endTime: new Date(seed.endTime).toISOString(),
-        image: seed.image,
-        tags: seed.tags || [],
-        yesOdds: seed.yesOdds !== undefined ? seed.yesOdds : 50.00,
-        noOdds: seed.noOdds !== undefined ? seed.noOdds : 50.00,
-        totalPool: seed.totalPool !== undefined ? seed.totalPool : 0,
-        yesPool: seed.totalPool !== undefined ? (seed.totalPool * (seed.yesOdds || 50) / 100) : 0,
-        noPool: seed.totalPool !== undefined ? (seed.totalPool * (seed.noOdds || 50) / 100) : 0,
-        volume24h: seed.volume24h !== undefined ? seed.volume24h : 0,
-        participants: seed.participants !== undefined ? seed.participants : 0,
-        status: "OPEN",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
-      created++;
+      try {
+        // Use atomic UPSERT for sourceId matching
+        const values = {
+          sourceId: String(seed.sourceId),
+          source: seed.source as any,
+          title: seed.title,
+          description: seed.description,
+          category: seed.category,
+          eventType: seed.eventType,
+          startTime: seed.startTime ? new Date(seed.startTime).toISOString() : null,
+          endTime: new Date(seed.endTime).toISOString(),
+          image: seed.image,
+          tags: seed.tags || [],
+          yesOdds: seed.yesOdds !== undefined ? seed.yesOdds : 50.00,
+          noOdds: seed.noOdds !== undefined ? seed.noOdds : 50.00,
+          totalPool: seed.totalPool !== undefined ? seed.totalPool : 0,
+          yesPool: seed.totalPool !== undefined ? (seed.totalPool * (seed.yesOdds || 50) / 100) : 0,
+          noPool: seed.totalPool !== undefined ? (seed.totalPool * (seed.noOdds || 50) / 100) : 0,
+          volume24h: seed.volume24h !== undefined ? seed.volume24h : 0,
+          participants: seed.participants !== undefined ? seed.participants : 0,
+          status: "OPEN" as const,
+          updatedAt: new Date().toISOString(),
+        };
+
+        const result = await db.insert(markets)
+          .values({
+            ...values,
+            createdAt: new Date().toISOString(),
+          })
+          .onConflictDoUpdate({
+            target: markets.sourceId,
+            set: {
+              yesOdds: values.yesOdds,
+              noOdds: values.noOdds,
+              totalPool: values.totalPool,
+              volume24h: values.volume24h,
+              participants: values.participants,
+              updatedAt: values.updatedAt,
+            }
+          });
+        
+        // SQLite/LibSQL doesn't always return counts clearly in this format, but we assume success
+        created++;
+      } catch (err) {
+        console.error(`[Sync] Failed to upsert market ${seed.sourceId}:`, err);
+        skipped++;
+      }
     } else {
       created++;
     }
@@ -184,25 +210,8 @@ export async function createMarketsJob(options: CreateMarketJobOptions = {}) {
       totalCreated += fbRes.created;
       totalSkipped += fbRes.skipped;
     } catch (err) {
-      const mockWcSeeds: GenericMarketSeed[] = [
-        {
-          source: "world-cup",
-          sourceId: "wc-mock-final-2026",
-          title: "World Cup 2026 Final: Brazil vs France",
-          description: "Who will lift the trophy at the MetLife Stadium? Brazil seeks their 6th star against the defending finalists France.",
-          category: "World Cup",
-          eventType: "sports",
-          startTime: "2026-07-19T20:00:00Z",
-          endTime: "2026-07-19T23:00:00Z",
-          image: "https://images.unsplash.com/photo-1574629810360-70f90dec40c4?q=80&w=800&auto=format",
-          tags: ["World Cup", "Soccer", "Final"],
-          yesOdds: 52,
-          noOdds: 48
-        }
-      ];
-      const wcRes = await processMarketSeeds(db, mockWcSeeds, "WorldCupMock", dryRun);
-      totalCreated += wcRes.created;
-      totalSkipped += wcRes.skipped;
+      // Logic for fallback/mock was creating stale data
+      console.warn("  ⚠️ API-Football fetch failed, skipping mock fallback to prevent duplicates.");
     }
 
     // 6. Run Market Maker simulation
