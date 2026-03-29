@@ -25,6 +25,9 @@ async function processMarketSeeds(db: any, seeds: GenericMarketSeed[], sourceNam
   let skipped = 0;
 
   for (const seed of seeds) {
+    // Yield event loop to prevent blocking HTTP health checks on small CPU instances
+    await new Promise(resolve => setTimeout(resolve, 50)); 
+
     const existing = await db
       .select()
       .from(markets)
@@ -33,7 +36,6 @@ async function processMarketSeeds(db: any, seeds: GenericMarketSeed[], sourceNam
 
     if (existing.length > 0) {
       if (!dryRun) {
-        // Update existing market odds to ensure events sync consistently
         await db.update(markets)
           .set({
             yesOdds: seed.yesOdds !== undefined ? seed.yesOdds : existing[0].yesOdds,
@@ -45,7 +47,6 @@ async function processMarketSeeds(db: any, seeds: GenericMarketSeed[], sourceNam
           })
           .where(eq(markets.id, existing[0].id));
       }
-      // Count as skipped creation since it existed
       skipped++;
       continue;
     }
@@ -73,10 +74,8 @@ async function processMarketSeeds(db: any, seeds: GenericMarketSeed[], sourceNam
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
-      console.log(`  ✅ Created ${sourceName}: ${seed.title.slice(0, 50)}...`);
       created++;
     } else {
-      console.log(`  [DRY RUN] Would create ${sourceName}: ${seed.title.slice(0, 50)}...`);
       created++;
     }
   }
@@ -90,7 +89,7 @@ async function processMarketSeeds(db: any, seeds: GenericMarketSeed[], sourceNam
 export async function createMarketsJob(options: CreateMarketJobOptions = {}) {
   const { mockMode = false, dryRun = false, leagueId = 39 } = options;
 
-  console.log(`[${new Date().toISOString()}] Starting COMPREHENSIVE market creation job...`);
+  console.log(`[${new Date().toISOString()}] Starting LIGHTWEIGHT sync (30 top, 5 per tag)...`);
   
   try {
     const db = await getDb();
@@ -103,8 +102,8 @@ export async function createMarketsJob(options: CreateMarketJobOptions = {}) {
     let totalSkipped = 0;
 
     // 1. Polymarket - General Top
-    console.log("\n📊 Fetching Polymarket events (Top 100)...");
-    const polymarketMarkets = await fetchTopMarkets(100);
+    const polymarketLimit = 30; // REDUCED from 100
+    const polymarketMarkets = await fetchTopMarkets(polymarketLimit);
     const pmSeeds: GenericMarketSeed[] = polymarketMarkets.map(m => ({
       source: "polymarket",
       sourceId: m.id,
@@ -127,11 +126,10 @@ export async function createMarketsJob(options: CreateMarketJobOptions = {}) {
     totalSkipped += pmRes.skipped;
 
     // 1b. Polymarket - Categorized Tags
-    const tagsToFetch = ["crypto", "entertainment", "politics", "elections", "basketball", "nba", "economy"];
-    console.log(`📊 Fetching Polymarket specific tags: ${tagsToFetch.join(", ")}...`);
+    const tagsToFetch = ["crypto", "entertainment", "politics", "elections", "basketball", "economy"];
     for (const tag of tagsToFetch) {
       try {
-        const taggedMarkets = await fetchMarketsByTag(tag, 20);
+        const taggedMarkets = await fetchMarketsByTag(tag, 5); // REDUCED from 20
         const taggedSeeds: GenericMarketSeed[] = taggedMarkets.map(m => ({
           source: "polymarket",
           sourceId: m.id,
@@ -153,31 +151,29 @@ export async function createMarketsJob(options: CreateMarketJobOptions = {}) {
         totalCreated += tRes.created;
         totalSkipped += tRes.skipped;
       } catch (e) {
-        console.warn(`  ⚠️ Failed to fetch Polymarket tag: ${tag}`);
+        // Silently skip tag failures
       }
     }
 
-    // 2. Kalshi (Silenced 404 source)
+    // 2. Kalshi (Silenced source)
     const kalshiSeeds = await fetchKalshiMarkets(); 
     const kalshiRes = await processMarketSeeds(db, kalshiSeeds, "Kalshi", dryRun);
     totalCreated += kalshiRes.created;
     totalSkipped += kalshiRes.skipped;
- 
-    // 3. PredictIt (Silenced)
+
+    // 3. PredictIt (Silenced source)
     const predictItSeeds = await fetchPredictItMarkets();
     const piRes = await processMarketSeeds(db, predictItSeeds, "PredictIt", dryRun);
     totalCreated += piRes.created;
     totalSkipped += piRes.skipped;
- 
+
     // 4. Manifold Markets
-    console.log("\n📊 Fetching Manifold Markets (Top 50)...");
     const manifoldSeeds = await fetchManifoldMarkets();
     const maniRes = await processMarketSeeds(db, manifoldSeeds, "Manifold", dryRun);
     totalCreated += maniRes.created;
     totalSkipped += maniRes.skipped;
 
     // 5. API-Football
-    console.log("\n⚽ Fetching API-Football matches...");
     try {
       const footballMatches = await fetchUpcomingMatches(leagueId, 7, mockMode);
       const footballSeeds: GenericMarketSeed[] = footballMatches.map(convertToMarketSeed).map(s => ({
@@ -188,7 +184,6 @@ export async function createMarketsJob(options: CreateMarketJobOptions = {}) {
       totalCreated += fbRes.created;
       totalSkipped += fbRes.skipped;
     } catch (err) {
-      console.warn("  ⚠️ API-Football fetch failed, generating world cup mock samples instead.");
       const mockWcSeeds: GenericMarketSeed[] = [
         {
           source: "world-cup",
@@ -203,20 +198,6 @@ export async function createMarketsJob(options: CreateMarketJobOptions = {}) {
           tags: ["World Cup", "Soccer", "Final"],
           yesOdds: 52,
           noOdds: 48
-        },
-        {
-          source: "world-cup",
-          sourceId: "wc-mock-semi-1",
-          title: "World Cup Semi-Final: Argentina vs Portugal",
-          description: "The dream match. Messi vs Ronaldo on the biggest stage one last time?",
-          category: "World Cup",
-          eventType: "sports",
-          startTime: "2026-07-14T20:00:00Z",
-          endTime: "2026-07-14T23:00:00Z",
-          image: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=800&auto=format",
-          tags: ["World Cup", "Soccer", "Messi", "Ronaldo"],
-          yesOdds: 50,
-          noOdds: 50
         }
       ];
       const wcRes = await processMarketSeeds(db, mockWcSeeds, "WorldCupMock", dryRun);
@@ -225,18 +206,14 @@ export async function createMarketsJob(options: CreateMarketJobOptions = {}) {
     }
 
     // 6. Run Market Maker simulation
-    console.log("\n🤖 Running Market Maker stimulation...");
     const { marketMakerJob } = await import("./marketMaker");
     await marketMakerJob();
 
-    console.log(`\n📈 Job Summary:`);
-    console.log(`  Created: ${totalCreated}`);
-    console.log(`  Skipped: ${totalSkipped}`);
-    console.log(`  Total: ${totalCreated + totalSkipped}`);
+    console.log(`[Job] Summary - Created: ${totalCreated}, Skipped: ${totalSkipped}`);
 
     return { createdCount: totalCreated, skippedCount: totalSkipped };
   } catch (error) {
-    console.error("❌ Error in market creation job:", error);
+    console.error("❌ Job Error:", error);
     throw error;
   }
 }
