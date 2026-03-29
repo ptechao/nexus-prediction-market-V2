@@ -74,20 +74,20 @@ async function startServer() {
     // Log Memory Usage
     const logMemory = () => {
       const used = process.memoryUsage().heapUsed / 1024 / 1024;
-      console.log(`[System] Memory Usage: ${Math.round(used * 100) / 100} MB / 512.00 MB`);
+      console.log(`[System] Memory Status: ${Math.round(used * 100) / 100} MB / 512.00 MB`);
     };
     logMemory();
-    setInterval(logMemory, 120000); // Pulse every 2 mins
+    setInterval(logMemory, 300000); // Pulse every 5 mins (Low frequency)
 
     // Deferred DB & Jobs
     setTimeout(async () => {
       try {
         await getDb();
-        console.log("[Database] Background schema verification complete.");
+        console.log("[Database] Schema check done.");
       } catch (err: any) {
         console.error("[Database] Background init failed:", err.message);
       }
-    }, 15000); // 15s delay
+    }, 20000); // 20s delay
 
     const handleWorkerError = (err: any, prefix: string) => {
       const msg = err.message || (typeof err === 'string' ? err : 'Unknown error');
@@ -100,7 +100,7 @@ async function startServer() {
       } catch (err) {
         handleWorkerError(err, "[Sync Worker]");
       } finally {
-        setTimeout(runSyncTask, 20 * 60 * 1000); // Slowed to 20m
+        setTimeout(runSyncTask, 60 * 60 * 1000); // 1 Hour (Ultra slow)
       }
     };
 
@@ -110,20 +110,23 @@ async function startServer() {
       } catch (err) {
         handleWorkerError(err, "[Matching Engine]");
       } finally {
-        setTimeout(runMatchingTask, 60 * 1000); // 1m
+        setTimeout(runMatchingTask, 5 * 60 * 1000); // 5 Minutes
       }
     };
 
-    // Staggered background jobs start
+    // Staggered background jobs start (Extreme buffer)
+    
+    // Start Matching Engine after 2 minutes
     setTimeout(() => {
-      console.log("[Matching Engine] Starting background matcher...");
+      console.log("[Matching Engine] Starting background matcher (2m delay)...");
       runMatchingTask();
-    }, 45000);
+    }, 120000);
 
+    // Initial Sync after 10 minutes (Allow long stable quiet period)
     setTimeout(() => {
-      console.log("[Sync Worker] Starting background sync (staggered start)...");
+      console.log("[Sync Worker] Starting background sync (10m delay)...");
       runSyncTask();
-    }, 180000); // 3 minutes delay for first sync
+    }, 600000);
   });
 
   server.on("error", (err: any) => {
@@ -132,11 +135,7 @@ async function startServer() {
   });
 }
 
-startServer().catch(err => {
-  console.error("[Server] Fatal process failure:", err.message || err);
-  process.exit(1);
-});
-
+// Fixed the double listener from the previous edit
 startServer().catch(err => {
   console.error("[Server] Fatal process failure:", err.message || err);
   process.exit(1);
