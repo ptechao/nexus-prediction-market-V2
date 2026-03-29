@@ -34,64 +34,61 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
 
-  // IMMEDIATELY DETECT PORT & LISTEN
-  // Render Free Plan needs the port bound ASAP to pass health check
+  // ─── 1. CORE MIDDLEWARES (Must be BEFORE listen) ───
+  
+  // Configure body parser
+  app.use(express.json({ limit: "50mb" }));
+  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+  // Health check (Highest priority)
+  app.get("/health", (req, res) => res.status(200).send("OK"));
+
+  // OAuth
+  registerOAuthRoutes(app);
+
+  // tRPC
+  app.use(
+    "/api/trpc",
+    createExpressMiddleware({
+      router: appRouter,
+      createContext,
+    })
+  );
+
+  // Static / Vite (Mounting synchronously to be ready for first hit)
+  if (process.env.NODE_ENV === "development") {
+    await setupVite(app, server);
+  } else {
+    serveStatic(app);
+  }
+
+  // ─── 2. BIND PORT & START (The Standard Way) ───
+  
   const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
   
-  server.listen(port, "0.0.0.0", async () => {
-    console.log(`[Server] Boot success! Listening on http://0.0.0.0:${port}/`);
+  server.listen(port, () => {
+    console.log(`[Server] Final Robust Boot success! Listening on Port ${port}`);
     
-    // ─── LATE INITIALIZATION (Non-blocking) ───
+    // ─── LATE BACKGROUND TASKS (Non-blocking) ───
 
-    // 1. Configure body parser
-    app.use(express.json({ limit: "50mb" }));
-    app.use(express.urlencoded({ limit: "50mb", extended: true }));
-
-    // 2. Health check (Very light)
-    app.get("/health", (req, res) => res.status(200).send("OK"));
-
-    // 3. OAuth
-    registerOAuthRoutes(app);
-
-    // 4. tRPC
-    app.use(
-      "/api/trpc",
-      createExpressMiddleware({
-        router: appRouter,
-        createContext,
-      })
-    );
-
-    // 5. Static / Vite
-    if (process.env.NODE_ENV === "development") {
-      await setupVite(app, server);
-    } else {
-      serveStatic(app);
-    }
-
-    // ─── STAGGERED INITIALIZATION (Memory & CPU Protection) ───
-    
-    // Log Memory Usage periodically for debugging Render Free Tier
+    // Log Memory Usage
     const logMemory = () => {
       const used = process.memoryUsage().heapUsed / 1024 / 1024;
       console.log(`[System] Memory Usage: ${Math.round(used * 100) / 100} MB / 512.00 MB`);
     };
     logMemory();
-    setInterval(logMemory, 60000); // Log every minute
+    setInterval(logMemory, 120000); // Pulse every 2 mins
 
-    // 1. Deferred DB Initialization (10s delay)
-    // Runs self-healing migrations without blocking initial health check
+    // Deferred DB & Jobs
     setTimeout(async () => {
-      console.log("[Database] Starting staggered initialization...");
       try {
         await getDb();
-        console.log("[Database] Online and schema verified.");
+        console.log("[Database] Background schema verification complete.");
       } catch (err: any) {
         console.error("[Database] Background init failed:", err.message);
       }
-    }, 10000);
+    }, 15000); // 15s delay
 
-    // 2. BACKGROUND JOBS
     const handleWorkerError = (err: any, prefix: string) => {
       const msg = err.message || (typeof err === 'string' ? err : 'Unknown error');
       console.error(`${prefix} Error:`, msg);
@@ -103,7 +100,7 @@ async function startServer() {
       } catch (err) {
         handleWorkerError(err, "[Sync Worker]");
       } finally {
-        setTimeout(runSyncTask, 15 * 60 * 1000); // 15m
+        setTimeout(runSyncTask, 20 * 60 * 1000); // Slowed to 20m
       }
     };
 
@@ -117,19 +114,16 @@ async function startServer() {
       }
     };
 
-    // Staggered background jobs start (Further delayed)
-    
-    // Start Matching Engine after 1 minute
+    // Staggered background jobs start
     setTimeout(() => {
-      console.log("[Matching Engine] Starting background matcher (60s staggered start)...");
+      console.log("[Matching Engine] Starting background matcher...");
       runMatchingTask();
-    }, 60000);
+    }, 45000);
 
-    // Start Initial Sync after 2 minutes
     setTimeout(() => {
-      console.log("[Sync Worker] Starting background sync (120s staggered start)...");
+      console.log("[Sync Worker] Starting background sync (staggered start)...");
       runSyncTask();
-    }, 120000);
+    }, 180000); // 3 minutes delay for first sync
   });
 
   server.on("error", (err: any) => {
@@ -137,6 +131,11 @@ async function startServer() {
     process.exit(1);
   });
 }
+
+startServer().catch(err => {
+  console.error("[Server] Fatal process failure:", err.message || err);
+  process.exit(1);
+});
 
 startServer().catch(err => {
   console.error("[Server] Fatal process failure:", err.message || err);
