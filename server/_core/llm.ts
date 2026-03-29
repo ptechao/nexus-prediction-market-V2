@@ -324,9 +324,17 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorBody = await response.text().catch(() => "N/A");
+    let shortError = errorBody;
+    try {
+      const parsed = JSON.parse(errorBody);
+      shortError = parsed.error?.message || parsed.message || errorBody.slice(0, 100);
+    } catch (e) {
+      shortError = errorBody.slice(0, 100);
+    }
+    
     throw new Error(
-      `LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`
+      `LLM invoke failed: ${response.status} ${response.statusText} – ${shortError}`
     );
   }
 

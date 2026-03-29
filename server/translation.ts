@@ -3,11 +3,23 @@
 
 import { invokeLLM } from "./_core/llm";
 
+// SIMPLE TRANSLATION CACHE (In-memory)
+// Prevents redundant AI calls for the same phrases
+const translationCache = new Map<string, string>();
+
 export async function translateText(
   text: string,
   targetLang: string,
   sourceLang: string = "English"
 ): Promise<string> {
+  if (!text || targetLang === 'en' || targetLang === 'English') return text;
+
+  // Use cache if available
+  const cacheKey = `${targetLang}:${text}`;
+  if (translationCache.has(cacheKey)) {
+    return translationCache.get(cacheKey)!;
+  }
+
   // Map internal lang codes to full names for LLM prompt
   const langNames: Record<string, string> = {
     'zh-TW': 'Traditional Chinese (繁體中文)',
@@ -47,10 +59,12 @@ Text: ${text}`;
       throw new Error("No response from LLM for translation");
     }
 
-    return translated.trim();
-  } catch (error) {
-    console.error("AI Translation Error:", error);
-    // Return original text as fallback
+    const result = translated.trim();
+    translationCache.set(cacheKey, result);
+    return result;
+  } catch (error: any) {
+    // Only log essential info, not full error object
+    console.error(`[Translation] Fallback to original text triggered. Error: ${error.message || 'Unknown'}`);
     return text;
   }
 }

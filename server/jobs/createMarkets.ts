@@ -157,20 +157,18 @@ export async function createMarketsJob(options: CreateMarketJobOptions = {}) {
       }
     }
 
-    // 2. Kalshi
-    console.log("\n📊 Fetching Kalshi events (Top 50)...");
-    const kalshiSeeds = await fetchKalshiMarkets(); // Currently limited inside to 20, let's just use it
+    // 2. Kalshi (Silenced 404 source)
+    const kalshiSeeds = await fetchKalshiMarkets(); 
     const kalshiRes = await processMarketSeeds(db, kalshiSeeds, "Kalshi", dryRun);
     totalCreated += kalshiRes.created;
     totalSkipped += kalshiRes.skipped;
-
-    // 3. PredictIt
-    console.log("\n📊 Fetching PredictIt events...");
+ 
+    // 3. PredictIt (Silenced)
     const predictItSeeds = await fetchPredictItMarkets();
     const piRes = await processMarketSeeds(db, predictItSeeds, "PredictIt", dryRun);
     totalCreated += piRes.created;
     totalSkipped += piRes.skipped;
-
+ 
     // 4. Manifold Markets
     console.log("\n📊 Fetching Manifold Markets (Top 50)...");
     const manifoldSeeds = await fetchManifoldMarkets();
