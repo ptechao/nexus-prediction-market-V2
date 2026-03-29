@@ -21,20 +21,42 @@ import '@rainbow-me/rainbowkit/styles.css';
 
 const queryClient = new QueryClient();
 
+import AdminDashboard from "./pages/Admin/Dashboard";
+
 function Router() {
-  // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/markets" component={Markets} />
-      <Route path="/markets/:id" component={MarketDetail} />
-      <Route path="/leaderboard" component={Leaderboard} />
-      <Route path="/vault/:id" component={VaultDetails} />
-      <Route path="/portfolio" component={Portfolio} />
-      <Route path="/profile" component={Profile} />
-      <Route path="/404" component={NotFound} />
-      {/* Final fallback route */}
-      <Route component={NotFound} />
+      {/* Admin Shell */}
+      <Route path="/admin/:rest*">
+        <Switch>
+          <Route path="/admin/dashboard" component={AdminDashboard} />
+          <Route path="/admin/markets" component={AdminDashboard} />
+          <Route path="/admin/users" component={AdminDashboard} />
+          <Route path="/admin/reports" component={AdminDashboard} />
+          <Route path="/admin/settings" component={AdminDashboard} />
+          <Route component={() => <AdminDashboard />} />
+        </Switch>
+      </Route>
+
+      {/* Main Marketplace Shell */}
+      <Route>
+        <div className="flex flex-col min-h-screen">
+          <Navigation />
+          <main className="flex-grow">
+            <Switch>
+              <Route path="/" component={Home} />
+              <Route path="/markets" component={Markets} />
+              <Route path="/markets/:id" component={MarketDetail} />
+              <Route path="/leaderboard" component={Leaderboard} />
+              <Route path="/vault/:id" component={VaultDetails} />
+              <Route path="/portfolio" component={Portfolio} />
+              <Route path="/profile" component={Profile} />
+              <Route path="/404" component={NotFound} />
+              <Route component={NotFound} />
+            </Switch>
+          </main>
+        </div>
+      </Route>
     </Switch>
   );
 }
@@ -57,7 +79,6 @@ function App() {
               >
                 <TooltipProvider>
                   <Toaster />
-                  <Navigation />
                   <Router />
                 </TooltipProvider>
               </ThemeProvider>

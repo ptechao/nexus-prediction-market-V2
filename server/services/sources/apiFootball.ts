@@ -51,7 +51,7 @@ export interface MarketSeed {
 }
 
 const API_KEY = process.env.API_FOOTBALL_KEY || "";
-const API_BASE = "https://api-football-v3.p.rapidapi.com";
+const API_BASE = "https://api-football-v3.p.rapidapi.com/v3";
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // ms
 

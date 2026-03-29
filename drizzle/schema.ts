@@ -4,7 +4,7 @@ import {
   sqliteTable,
   real,
 } from "drizzle-orm/sqlite-core";
-import { sql } from "drizzle-orm";
+import { sql, type SQL } from "drizzle-orm";
 
 /**
  * Core user table backing auth flow.
@@ -15,7 +15,7 @@ export const users = sqliteTable("users", {
   name: text("name"),
   email: text("email"),
   loginMethod: text("loginMethod"),
-  role: text("role", { enum: ["user", "admin"] }).default("user").notNull(),
+  role: text("role").default("user").notNull(),
   createdAt: text("createdAt").default(sql`CURRENT_TIMESTAMP`).notNull(),
   updatedAt: text("updatedAt").default(sql`CURRENT_TIMESTAMP`).notNull(),
   lastSignedIn: text("lastSignedIn").default(sql`CURRENT_TIMESTAMP`).notNull(),
@@ -30,7 +30,7 @@ export type InsertUser = typeof users.$inferInsert;
 export const markets = sqliteTable("markets", {
   id: integer("id", { mode: 'number' }).primaryKey({ autoIncrement: true }),
   sourceId: text("sourceId").notNull().unique(),
-  source: text("source", { enum: ["polymarket", "api-football", "world-cup", "kalshi", "predictit", "manifold"] }).notNull(),
+  source: text("source").notNull(),
   title: text("title").notNull(),
   description: text("description"),
   category: text("category"),
@@ -46,16 +46,8 @@ export const markets = sqliteTable("markets", {
   noPool: real("noPool").default(0),
   volume24h: real("volume24h").default(0),
   participants: integer("participants", { mode: 'number' }).default(0),
-  status: text("status", { enum: [
-    "OPEN",
-    "RESOLVED",
-    "CANCELLED",
-    "DISPUTE_PENDING",
-    "DISPUTE_RESOLVED",
-  ] })
-    .default("OPEN")
-    .notNull(),
-  outcome: text("outcome", { enum: ["YES", "NO", "DRAW", "INVALID"] }),
+  status: text("status").default("OPEN").notNull(),
+  outcome: text("outcome"),
   disputeStartedAt: text("disputeStartedAt"),
   disputeEndsAt: text("disputeEndsAt"),
   contractAddress: text("contractAddress"),
@@ -74,7 +66,7 @@ export const disputes = sqliteTable("disputes", {
   marketId: integer("marketId").notNull(),
   initiatedBy: integer("initiatedBy").notNull(),
   reason: text("reason").notNull(),
-  status: text("status", { enum: ["OPEN", "RESOLVED", "REJECTED"] }).default("OPEN").notNull(),
+  status: text("status").default("OPEN").notNull(),
   resolvedBy: integer("resolvedBy"),
   resolution: text("resolution"),
   createdAt: text("createdAt").default(sql`CURRENT_TIMESTAMP`).notNull(),
@@ -88,9 +80,9 @@ export const fees = sqliteTable("fees", {
   id: integer("id", { mode: 'number' }).primaryKey({ autoIncrement: true }),
   marketId: integer("marketId").notNull(),
   traderId: integer("traderId"),
-  type: text("type", { enum: ["PLATFORM", "KOL", "REFUND"] }).notNull(),
+  type: text("type").notNull(),
   amount: real("amount").notNull(),
-  status: text("status", { enum: ["PENDING", "PAID", "CANCELLED"] }).default("PENDING").notNull(),
+  status: text("status").default("PENDING").notNull(),
   createdAt: text("createdAt").default(sql`CURRENT_TIMESTAMP`).notNull(),
   updatedAt: text("updatedAt").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
@@ -103,9 +95,7 @@ export const refunds = sqliteTable("refunds", {
   marketId: integer("marketId").notNull(),
   userId: integer("userId").notNull(),
   amount: real("amount").notNull(),
-  status: text("status", { enum: ["PENDING", "APPROVED", "REJECTED", "COMPLETED"] })
-    .default("PENDING")
-    .notNull(),
+  status: text("status").default("PENDING").notNull(),
   reason: text("reason"),
   txHash: text("txHash"),
   createdAt: text("createdAt").default(sql`CURRENT_TIMESTAMP`).notNull(),
@@ -118,7 +108,7 @@ export const refunds = sqliteTable("refunds", {
 export const marketOutcomes = sqliteTable("marketOutcomes", {
   id: integer("id", { mode: 'number' }).primaryKey({ autoIncrement: true }),
   marketId: integer("marketId").notNull().unique(),
-  outcome: text("outcome", { enum: ["YES", "NO", "DRAW", "INVALID"] }).notNull(),
+  outcome: text("outcome").notNull(),
   source: text("source"),
   confidence: real("confidence"),
   notes: text("notes"),
@@ -136,7 +126,7 @@ export const followersVaults = sqliteTable("followersVaults", {
   vaultAddress: text("vaultAddress").notNull(),
   depositAmount: real("depositAmount").notNull(),
   sharesMinted: real("sharesMinted").notNull(),
-  status: text("status", { enum: ["ACTIVE", "INACTIVE", "WITHDRAWN"] }).default("ACTIVE").notNull(),
+  status: text("status").default("ACTIVE").notNull(),
   createdAt: text("createdAt").default(sql`CURRENT_TIMESTAMP`).notNull(),
   updatedAt: text("updatedAt").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
@@ -149,15 +139,13 @@ export const followerTrades = sqliteTable("followerTrades", {
   followerId: integer("followerId").notNull(),
   traderId: integer("traderId").notNull(),
   marketId: integer("marketId").notNull(),
-  side: text("side", { enum: ["YES", "NO"] }).notNull(),
+  side: text("side").notNull(),
   leaderAmount: real("leaderAmount").notNull(),
   followerAllocation: real("followerAllocation").notNull(),
   entryOdds: real("entryOdds"),
   exitOdds: real("exitOdds"),
   realizedPnl: real("realizedPnl"),
-  status: text("status", { enum: ["QUEUED", "EXECUTED", "RESOLVED", "CANCELLED"] })
-    .default("QUEUED")
-    .notNull(),
+  status: text("status").default("QUEUED").notNull(),
   txHash: text("txHash"),
   createdAt: text("createdAt").default(sql`CURRENT_TIMESTAMP`).notNull(),
   updatedAt: text("updatedAt").default(sql`CURRENT_TIMESTAMP`).notNull(),
@@ -165,12 +153,12 @@ export const followerTrades = sqliteTable("followerTrades", {
 
 // Table to track real price movements for K-lines/charts
 export const marketPriceHistory = sqliteTable("market_price_history", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+  id: integer("id", { mode: 'number' }).primaryKey({ autoIncrement: true }),
   marketId: text("market_id").notNull(),
   priceYes: real("price_yes").notNull(),
   priceNo: real("price_no").notNull(),
-  totalPool: integer("total_pool").notNull(),
-  timestamp: integer("timestamp").notNull(),
+  totalPool: integer("total_pool", { mode: 'number' }).notNull(),
+  timestamp: integer("timestamp", { mode: 'number' }).notNull(),
 });
 
 /**
@@ -178,14 +166,16 @@ export const marketPriceHistory = sqliteTable("market_price_history", {
  */
 export const orders = sqliteTable("orders", {
   id: integer("id", { mode: 'number' }).primaryKey({ autoIncrement: true }),
-  marketId: integer("marketId").notNull(),
-  orderIdOnChain: integer("orderIdOnChain"), // The ID from the smart contract
+  marketId: integer("marketId", { mode: 'number' }).notNull(),
   maker: text("maker").notNull(),
   amount: real("amount").notNull(),
   price: real("price").notNull(),
   isYes: integer("isYes", { mode: 'boolean' }).notNull(),
   isBuying: integer("isBuying", { mode: 'boolean' }).notNull(),
   remaining: real("remaining").notNull(),
-  status: text("status", { enum: ["OPEN", "FILLED", "CANCELLED"] }).default("OPEN"),
+  signature: text("signature"),
+  nonce: integer("nonce", { mode: 'number' }),
+  expiry: integer("expiry", { mode: 'number' }),
+  status: text("status").default("OPEN"),
   createdAt: text("createdAt").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });

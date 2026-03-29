@@ -7,10 +7,12 @@ import { fetchTopMarkets, fetchMarketsByTag, fetchMarketById } from "./polymarke
 import { fetchWorldCupMarkets, fetchWorldCupMarketById, fetchTrendingWorldCupMarkets } from "./worldcup";
 import { generateMatchPrediction } from "./worldcupAiPrediction";
 import { translateText } from "./translation";
+import { adminRouter } from "./adminRouter";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
+  admin: adminRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {

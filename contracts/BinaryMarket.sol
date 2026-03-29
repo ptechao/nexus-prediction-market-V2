@@ -5,15 +5,16 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 
 /**
  * @title BinaryMarket
- * @dev A tokenized binary prediction market with AMM-based secondary trading.
+ * @dev A tokenized binary prediction market with AMM and Hybrid (Offline) Order Book.
  * - Positions are ERC-1155 tokens (ID 1: YES, ID 2: NO)
- * - Supports early sell-back based on current pool ratio (AMM)
- * - Supports KOL referrals for fee sharing
+ * - Supports EIP-712 signed orders for zero-gas limit orders.
  */
-contract BinaryMarket is ERC1155, Ownable, ReentrancyGuard {
+contract BinaryMarket is ERC1155, Ownable, ReentrancyGuard, EIP712 {
     // ============ State Variables ============
     
     IERC20 public usdc;
@@ -49,13 +50,30 @@ contract BinaryMarket is ERC1155, Ownable, ReentrancyGuard {
     mapping(address => address) public userReferrer;
     mapping(address => uint256) public referrerEarnings;
     
+    struct OfflineOrder {
+        address user;
+        uint256 amount;      // Shares
+        uint256 price;       // USDC per share (scaled by 1e6)
+        bool isYes;
+        bool isBuying;
+        uint256 nonce;
+        uint256 expiry;
+    }
+
+    bytes32 public constant OFFLINE_ORDER_TYPEHASH = keccak256(
+        "OfflineOrder(address user,uint256 amount,uint256 price,bool isYes,bool isBuying,uint256 nonce,uint256 expiry)"
+    );
+
+    mapping(address => uint256) public userNonces;
+    mapping(bytes32 => uint256) public orderFilledAmount;
+
     struct Order {
         uint256 id;
         address maker;
-        uint256 amount;      // Shares for Selling, USDC for Buying
-        uint256 price;       // USDC per share (scaled by 1e6)
+        uint256 amount;
+        uint256 price;
         bool isYes;
-        bool isBuying;       // true: Maker wants to Buy YES/NO, false: Maker wants to Sell YES/NO
+        bool isBuying;
         uint256 remaining;
         bool isActive;
     }
@@ -134,7 +152,7 @@ contract BinaryMarket is ERC1155, Ownable, ReentrancyGuard {
         string memory _eventTitle,
         uint256 _endTime,
         uint256 _feeBps
-    ) ERC1155("") Ownable(msg.sender) {
+    ) ERC1155("") Ownable(msg.sender) EIP712("NexusBinaryMarket", "1") {
         require(_usdc != address(0), "Invalid USDC address");
         require(_treasury != address(0), "Invalid treasury address");
         require(_endTime > block.timestamp, "End time must be in the future");
@@ -149,6 +167,86 @@ contract BinaryMarket is ERC1155, Ownable, ReentrancyGuard {
         status = MarketStatus.OPEN;
         resolvedOutcome = Outcome.UNRESOLVED;
         nextOrderId = 1;
+    }
+
+    // ============ Hybrid Matching Book Functions ============
+
+    /**
+     * @dev Match two offline signed orders (one buyer, one seller).
+     * This is called by the system backend (matching engine).
+     */
+    function matchOrders(
+        OfflineOrder memory buyOrder,
+        bytes memory buySig,
+        OfflineOrder memory sellOrder,
+        bytes memory sellSig,
+        uint256 fillAmount
+    ) external nonReentrant {
+        require(status == MarketStatus.OPEN, "Market is not open");
+        require(buyOrder.isBuying && !sellOrder.isBuying, "Invalid order directions");
+        require(buyOrder.isYes == sellOrder.isYes, "Token IDs must match");
+        require(buyOrder.price >= sellOrder.price, "Price mismatch");
+        require(block.timestamp < buyOrder.expiry && block.timestamp < sellOrder.expiry, "Order expired");
+
+        _verifyOrder(buyOrder, buySig);
+        _verifyOrder(sellOrder, sellSig);
+
+        bytes32 buyHash = _hashOrder(buyOrder);
+        bytes32 sellHash = _hashOrder(sellOrder);
+
+        require(orderFilledAmount[buyHash] + fillAmount <= buyOrder.amount, "Buy fill overflow");
+        require(orderFilledAmount[sellHash] + fillAmount <= sellOrder.amount, "Sell fill overflow");
+
+        orderFilledAmount[buyHash] += fillAmount;
+        orderFilledAmount[sellHash] += fillAmount;
+
+        // Settlement: Taker price is usually used for the trade
+        uint256 tradePrice = sellOrder.price; 
+        uint256 usdcAmount = (fillAmount * tradePrice) / 1e6;
+
+        uint256 tokenId = buyOrder.isYes ? YES_TOKEN_ID : NO_TOKEN_ID;
+
+        // Transfer USDC from buyer to seller
+        require(usdc.transferFrom(buyOrder.user, sellOrder.user, usdcAmount), "USDC trade transfer failed");
+
+        // Swap positions (if seller has positions they burn, if maker creates new positions etc.)
+        // For simplicity: this model assumes positions are minted/burned via AMM logic 
+        // OR transferred if they are already in hand.
+        // In this hybrid model, we'll support both.
+        
+        uint256 sellerBalance = balanceOf(sellOrder.user, tokenId);
+        if (sellerBalance >= fillAmount) {
+            // Seller has existing shares, transfer them
+            _safeTransferFrom(sellOrder.user, buyOrder.user, tokenId, fillAmount, "");
+        } else {
+            // Seller is "creating" the position by minting? 
+            // In a binary market: minting 1 YES and 1 NO costs 1 USDC.
+            // But here we are doing a match. 
+            // Simple approach for Nexus: transfer from seller to buyer.
+            // If seller doesn't have it, they must mint it first or we revert.
+            revert("Seller has insufficient shares");
+        }
+
+        emit OrderFilled(0, buyOrder.user, fillAmount, block.timestamp);
+    }
+
+    function _hashOrder(OfflineOrder memory order) internal pure returns (bytes32) {
+        return keccak256(abi.encode(
+            OFFLINE_ORDER_TYPEHASH,
+            order.user,
+            order.amount,
+            order.price,
+            order.isYes,
+            order.isBuying,
+            order.nonce,
+            order.expiry
+        ));
+    }
+
+    function _verifyOrder(OfflineOrder memory order, bytes memory signature) internal view {
+        bytes32 digest = _hashTypedDataV4(_hashOrder(order));
+        address signer = ECDSA.recover(digest, signature);
+        require(signer == order.user, "Invalid signature");
     }
     
     // ============ Order Book Functions ============

@@ -35,17 +35,17 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     throw new Error("User openId is required for upsert");
   }
 
-  const db = await getDb();
+  const db = await getDb() as any;
   if (!db) {
     console.warn("[Database] Cannot upsert user: database not available");
     return;
   }
 
   try {
-    const values: InsertUser = {
+    const values: any = {
       openId: user.openId,
     };
-    const updateSet: Record<string, unknown> = {};
+    const updateSet: Record<string, any> = {};
 
     const textFields = ["name", "email", "loginMethod"] as const;
     type TextField = (typeof textFields)[number];
